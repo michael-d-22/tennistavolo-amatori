@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Classifica Amatori · Guida all'app</title>
+<style>
+@font-face{font-family:'Barlow Condensed';font-weight:700;src:url(../../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:400;src:url(../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Sans';font-weight:600;src:url(../../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;src:url(../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2) format('woff2')}
+
+@page{size:A4;margin:16mm 17mm 18mm}
+:root{--ink:#131A45;--ink2:#454B6B;--ink3:#6B6F86;--red:#C8231A;--rule:#DDD8CC;--paper:#F5F2EB}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:11.5pt;line-height:1.5;color:var(--ink)}
+h1,h2,h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin:0;line-height:1}
+h2{font-size:30pt;margin:0 0 4mm;padding-bottom:3mm;border-bottom:1.2mm solid var(--ink);break-after:avoid}
+h2 .n{color:var(--red);margin-right:3mm}
+h3{font-size:16pt;margin:7mm 0 2.5mm;break-after:avoid}
+p{margin:0 0 3mm}
+ul,ol{margin:0 0 3mm;padding-left:6mm}
+li{margin-bottom:1.6mm}
+b,strong{font-weight:600}
+.mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.label{font-family:'IBM Plex Mono',monospace;font-size:8.5pt;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.page{break-before:page}
+.lead{font-size:13pt;color:var(--ink2)}
+.shot{margin:3mm 0 1.5mm;border:.3mm solid var(--rule);display:block;width:100%}
+.cap{font-size:9pt;color:var(--ink3);margin-bottom:5mm}
+.fig{break-inside:avoid}
+.note{background:var(--paper);padding:4mm 5mm;margin:4mm 0;break-inside:avoid}
+.note .label{display:block;margin-bottom:1.5mm;color:var(--red)}
+table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:10.5pt}
+th{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:8pt;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:0 3mm 2mm 0;border-bottom:.4mm solid #C2BCAD}
+td{padding:2.4mm 3mm 2.4mm 0;border-bottom:.3mm solid var(--rule);vertical-align:top}
+tr{break-inside:avoid}
+td:first-child{font-weight:600;width:34%}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding-left:11mm;margin-bottom:3mm;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1.5mm;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20pt;color:var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:7mm;align-items:start}
+.q{border-bottom:.3mm solid var(--rule);padding:3mm 0 3mm 9mm;position:relative;break-inside:avoid}
+.q::before{content:'';position:absolute;left:0;top:4mm;width:4.5mm;height:4.5mm;border:.4mm solid var(--ink)}
+.q b{display:block}
+.q span{color:var(--ink2);font-size:10.5pt}
+.sq{display:inline-block;width:3mm;height:3mm;border-radius:.4mm;vertical-align:-.3mm}
+
+/* Copertina */
+.cover{height:255mm;overflow:hidden;display:flex;flex-direction:column}
+.cover-top{display:flex;justify-content:space-between;align-items:flex-start}
+.cover .logo{width:48mm}
+.cover h1{font-size:70pt;line-height:.86;margin-top:14mm}
+.cover h1 span{color:var(--red)}
+.cover .sub{font-size:15pt;color:var(--ink2);margin-top:6mm}
+.cover .shot{margin-top:9mm;width:88%}
+.cover-foot{margin-top:auto;display:flex;justify-content:space-between;border-top:1.2mm solid var(--ink);padding-top:4mm}
+</style>
+</head>
+<body>
+
+<!-- Copertina -->
+<section class="cover">
+  <div class="cover-top">
+    <img class="logo" src="img/logo.png" alt="Tornei e partite interne tennistavolo">
+    <span class="label">Bozza da provare · settembre 2026</span>
+  </div>
+  <h1>Classifica<br><span>Amatori</span></h1>
+  <p class="sub">L'app per registrare le partite di fine allenamento e tenere la classifica Elo della stagione 2026–27. Come funziona, in poche pagine.</p>
+  <img class="shot" src="img/classifica.png" alt="La schermata della classifica">
+  <div class="cover-foot">
+    <span class="label">Tornei e partite interne tennistavolo</span>
+    <span class="label">App per Windows · funziona anche senza internet</span>
+  </div>
+</section>
+
+<!-- 1 -->
+<section class="page">
+  <h2><span class="n">1</span>In breve</h2>
+  <p class="lead">A fine serata inserisci chi ha giocato con chi e il risultato in set. L'app calcola i punti, applica da sola il regolamento e ogni due settimane prepara la classifica da mandare nel gruppo.</p>
+  <ul>
+    <li><b>Due clic per partita:</b> scegli i due giocatori e il risultato (3–0, 3–1, 3–2…). Prima di salvare vedi già quanti punti prende e perde ciascuno.</li>
+    <li><b>Classifica sempre aggiornata</b>, con le frecce ▲▼ e i punti guadagnati o persi dall'ultima pubblicazione.</li>
+    <li><b>Pubblicazione</b> con un clic: un'immagine pronta da incollare su WhatsApp, oppure testo, PDF o Excel.</li>
+    <li><b>Niente si perde:</b> le partite che non contano restano visibili (barrate, con il motivo), ogni errore si può annullare e l'app fa da sola i salvataggi di sicurezza.</li>
+  </ul>
+  <div class="note">
+    <span class="label">Nota sulle immagini</span>
+    Nomi e risultati nelle immagini di questa guida sono inventati, servono solo a far vedere com'è l'app.
+  </div>
+
+</section>
+
+<section class="page">
+  <h2><span class="n">2</span>Il regolamento nell'app</h2>
+  <p>Ecco come l'app applica il regolamento della stagione. Tutti i numeri si possono cambiare in qualsiasi momento da <b>Impostazioni</b>.</p>
+  <table>
+    <tr><th>Regola</th><th>Cosa fa l'app</th></tr>
+    <tr><td>Si parte da 1200 punti</td><td>Tutti, anche chi entra a stagione in corso.</td></tr>
+    <tr><td>Punteggio Elo con K = 32</td><td>Chi batte un avversario più forte guadagna di più; chi perde con uno più debole perde di più. Tra due giocatori alla pari, chi vince prende 16 punti e l'altro li perde.</td></tr>
+    <tr><td>Al massimo 8 partite con lo stesso avversario</td><td>Dalla 9ª in poi la partita viene registrata ma <b>non conta</b>. L'app lo dice prima di salvare.</td></tr>
+    <tr><td>In classifica ufficiale solo con almeno 2 partite contro ciascuno</td><td>Chi non ci arriva resta in classifica ma con una riga rossa sotto il nome, per esempio “3 partite per entrare in classifica”.</td></tr>
+    <tr><td>Chi abbandona</td><td>Quando lo segni come ritirato, con ogni avversario contano solo le prime partite fino al minimo comune; le altre escono dal calcolo e i punti di tutti vengono ricalcolati. Prima di confermare l'app mostra quali partite verranno escluse.</td></tr>
+    <tr><td>Casi particolari</td><td>Ogni singola partita si può includere o escludere a mano, scrivendo il motivo.</td></tr>
+    <tr><td>Classifica ogni 2 settimane</td><td>Un pallino rosso su “Pubblica” ricorda quando è ora.</td></tr>
+  </table>
+</section>
+
+<!-- 3 -->
+<section class="page">
+  <h2><span class="n">3</span>Una serata tipo</h2>
+  <ol class="steps">
+    <li><b>Clicca il pulsante rosso “Nuova partita”</b> (in alto a sinistra, o Ctrl+2).</li>
+    <li><b>Scegli i due giocatori</b> dai due menu. Accanto al nome c'è il punteggio attuale.</li>
+    <li><b>Clicca il risultato</b> sotto il giocatore che ha vinto: 3–0, 3–1 o 3–2.</li>
+    <li><b>Controlla l'anteprima:</b> quanti punti prende chi vince, quanti ne perde l'altro, e quante partite valide hanno già giocato tra loro (su 8).</li>
+    <li><b>Salva</b> (o premi Invio). La partita compare a destra nell'elenco “Stasera” e puoi inserire subito la successiva.</li>
+  </ol>
+  <div class="fig">
+    <img class="shot" src="img/nuova-anteprima.png" alt="Schermata Nuova partita">
+    <div class="cap">Nuova partita: vince Luca Ferri 3–1. Andrea Neri perde 16 punti, Ferri ne guadagna 16. Tra loro sarà la seconda partita valida su 8.</div>
+  </div>
+  <div class="note">
+    <span class="label">Hai sbagliato?</span>
+    In alto a destra ci sono le frecce <b>Annulla</b> e <b>Ripeti</b> (anche Ctrl+Z e Ctrl+Y). Una partita si può anche correggere o eliminare in qualsiasi momento dalla pagina <b>Partite</b>: la classifica si ricalcola da sola, anche per le partite delle settimane precedenti.
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="page">
+  <h2><span class="n">4</span>Leggere la classifica</h2>
+  <div class="fig">
+    <img class="shot" src="img/classifica.png" alt="Schermata Classifica">
+    <div class="cap">In alto i numeri della stagione; sotto la classifica. Clicca un nome per aprire la sua scheda.</div>
+  </div>
+  <table>
+    <tr><th>Colonna</th><th>Significato</th></tr>
+    <tr><td># e frecce</td><td>Posizione e posti guadagnati (▲) o persi (▼) dall'ultima pubblicazione. “Nuovo” per chi non c'era.</td></tr>
+    <tr><td>Punti · Var.</td><td>Punteggio Elo attuale e differenza rispetto all'ultima pubblicazione.</td></tr>
+    <tr><td>G · V · P · Set</td><td>Partite valide giocate, vinte, perse; set vinti–persi.</td></tr>
+    <tr><td>Ultime 5</td><td><span class="sq" style="background:#22A55B"></span> vinta &nbsp; <span class="sq" style="background:#E0443A"></span> persa, dalla più vecchia alla più recente.</td></tr>
+    <tr><td>Riga rossa sotto il nome</td><td>Quante partite mancano per entrare in classifica ufficiale. Passando col mouse si vede con chi.</td></tr>
+  </table>
+  <p>Con <b>“Solo in classifica”</b> in alto a destra vedi solo chi ha già raggiunto la soglia, con le posizioni ricalcolate: è la classifica ufficiale.</p>
+</section>
+
+<!-- 5 -->
+<section class="page">
+  <h2><span class="n">5</span>Pubblicare ogni 2 settimane</h2>
+  <div class="two">
+    <div>
+      <ol class="steps">
+        <li><b>Apri “Pubblica”.</b> A sinistra vedi l'immagine esattamente come la vedranno nel gruppo.</li>
+        <li><b>Clicca “Copia immagine per WhatsApp”</b> e incollala nella chat del gruppo (Ctrl+V su WhatsApp Web o Desktop). In alternativa: testo per WhatsApp, PNG, PDF, Excel o CSV.</li>
+        <li><b>Clicca “Segna pubblicata”.</b> Da quel momento frecce e variazioni si calcolano rispetto a questa classifica, fino alla prossima.</li>
+      </ol>
+      <div class="note">
+        <span class="label">Nel gruppo</span>
+        L'immagine riporta il nome <b>Tornei e partite interne tennistavolo</b> ed è sempre su sfondo chiaro, anche se usi l'app col tema scuro.
+      </div>
+      <p>Una pubblicazione fatta per errore si toglie dalla stessa pagina, con “Elimina”.</p>
+    </div>
+    <div class="fig">
+      <img class="shot" src="img/export.png" alt="Immagine della classifica per WhatsApp" style="margin-top:0">
+      <div class="cap">L'immagine che arriva nel gruppo.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="page">
+  <h2><span class="n">6</span>Le altre pagine</h2>
+  <h3>Scontri diretti</h3>
+  <p>Una tabella di chi ha giocato con chi. Le caselle con il bordo rosso sono le coppie che non hanno ancora le 2 partite minime: a colpo d'occhio sai chi far sfidare. Le caselle chiare sono le coppie che hanno già giocato le 8 partite valide.</p>
+  <div class="fig"><img class="shot" src="img/matrice.png" alt="Schermata Scontri diretti" style="width:80%"></div>
+  <h3>Partite</h3>
+  <p>Tutte le partite divise per serata. Per ciascuna: <b>Modifica</b>, <b>Escludi / Includi</b> (per decidere a mano se conta) ed <b>Elimina</b>. Le partite eliminate finiscono nel <b>Cestino</b> e si possono ripristinare.</p>
+  <div class="fig"><img class="shot" src="img/partite.png" alt="Schermata Partite" style="width:80%"></div>
+</section>
+
+<section class="page">
+  <h3 style="margin-top:0">Scheda giocatore</h3>
+  <p>Cliccando un nome: posizione, punti, andamento della stagione in un grafico, e per ogni avversario quante partite valide ha fatto, quante ne mancano e i punti guadagnati o persi. Da qui si segna anche un giocatore come <b>ritirato</b> (e lo si riattiva se torna: tutte le sue partite tornano a contare).</p>
+  <div class="fig"><img class="shot" src="img/giocatore.png" alt="Scheda giocatore"></div>
+  <h3>Impostazioni</h3>
+  <ul>
+    <li><b>Regolamento:</b> punti di partenza, K, massimo partite per coppia, soglia minima, giorni tra una pubblicazione e l'altra.</li>
+    <li><b>Aspetto:</b> tema scuro o chiaro, e grandezza dei testi (Piccola, Normale, Grande).</li>
+    <li><b>Dati:</b> “Esporta tutti i dati” crea un file da conservare o da portare su un altro PC; “Importa” lo unisce ai dati presenti senza doppioni. In futuro servirà anche per l'app sul telefono.</li>
+    <li><b>Backup:</b> l'app salva da sola una copia dei dati mentre la usi (ultime 30) e con un clic si torna a una copia precedente.</li>
+  </ul>
+  <h3>Installazione</h3>
+  <p>Si installa con il file <span class="mono">TennistavoloAmatori-Setup</span>, oppure si usa la versione <span class="mono">Portable</span> che parte senza installare nulla (anche da chiavetta). Al primo avvio Windows può mostrare “PC protetto da Windows”: si clicca <b>Ulteriori informazioni → Esegui comunque</b>. È normale per i programmi non distribuiti da un negozio.</p>
+</section>
+
+<!-- 7 -->
+<section class="page">
+  <h2><span class="n">7</span>Da decidere insieme</h2>
+  <p class="lead">In alcuni punti il regolamento non diceva tutto e ho fatto una scelta. Dimmi se ti vanno bene o cosa cambiare.</p>
+  <div class="q"><b>Chi abbandona senza aver affrontato tutti.</b><span>Il regolamento parla di chi ha affrontato tutti. Se qualcuno sparisce senza averli affrontati tutti, l'app calcola il minimo comune solo tra gli avversari che ha incontrato davvero. Tu puoi comunque includere o escludere a mano le singole partite.</span></div>
+  <div class="q"><b>Le partite “in esubero” non vengono cancellate.</b><span>Il regolamento dice di cancellarle dal database. L'app invece le tiene, barrate e con il motivo, ma non le conta: così se un giocatore torna o c'è un errore si recupera tutto.</span></div>
+  <div class="q"><b>Soglia minima e giocatori ritirati.</b><span>Per entrare in classifica ufficiale servono 2 partite con ciascun avversario ancora attivo. I ritirati non contano, altrimenti un abbandono bloccherebbe tutti.</span></div>
+  <div class="q"><b>Frecce e variazioni.</b><span>Sono calcolate rispetto all'ultima classifica pubblicata, non rispetto alla serata precedente.</span></div>
+  <div class="q"><b>Cosa c'è nell'immagine per il gruppo.</b><span>Posizione, frecce, punti, variazione, partite e set vinti–persi, e le partite che mancano per entrare in classifica. Manca qualcosa o c'è troppo?</span></div>
+  <div class="q"><b>Tornei.</b><span>Per ora l'app gestisce solo le partite delle serate. Come vuoi integrare i risultati dei tornei quando arriveranno?</span></div>
+  <div class="note" style="margin-top:7mm">
+    <span class="label">E poi</span>
+    Qualsiasi altra cosa: nomi, colori, pagine che non ti servono o che mancano. È una prima versione, si cambia facilmente.
+  </div>
+</section>
+
+</body>
+</html>

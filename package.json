@@ -14,7 +14,8 @@
     "test": "vitest run",
     "build:win": "electron-vite build && electron-builder --win",
     "screenshots": "electron-vite build && electron scripts/snap.cjs snaps",
-    "icon": "electron scripts/make-icon.cjs"
+    "icon": "electron scripts/make-icon.cjs",
+    "guide": "electron scripts/make-guide.cjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0"

@@ -132,6 +132,7 @@ app.on('browser-window-created', (_e, win) => {
       await js(`document.querySelectorAll('.history-bar button')[1].click()`)
       await wait(300)
       console.log('HISTORY dopo ripeti', await histState())
+      await wait(3500) // lascia sparire le notifiche prima degli screenshot successivi
       // Scheda giocatore
       await js(`document.querySelector('[data-page="classifica"]').click()`)
       await wait(200)

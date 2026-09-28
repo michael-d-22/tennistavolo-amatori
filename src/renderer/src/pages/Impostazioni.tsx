@@ -4,10 +4,12 @@ import { updateMeta } from '@core/mutations'
 import { mergeData, parseDataFile, toExportFile, type MergeReport } from '@core/sync'
 import type { AppData, Season, Settings } from '@core/types'
 import { useStore } from '../store'
+import { setTheme, useTheme, type ThemePref } from '../theme'
 import { Confirm, Modal, PageHead } from '../components/ui'
 
 export function ImpostazioniPage() {
   const { data, update, replaceAll, toast } = useStore()
+  const theme = useTheme()
   const [season, setSeason] = useState<Season>(data.season)
   const [settings, setSettings] = useState<Settings>(data.settings)
   const [backups, setBackups] = useState<{ name: string; size: number }[]>([])
@@ -119,6 +121,24 @@ export function ImpostazioniPage() {
 
         <div>
           <div className="card">
+            <h3 className="card-title">Aspetto</h3>
+            <div className="seg">
+              {(
+                [
+                  ['dark', '🌙 Scuro'],
+                  ['light', '☀️ Chiaro'],
+                  ['system', 'Come Windows']
+                ] as [ThemePref, string][]
+              ).map(([k, l]) => (
+                <button key={k} className={theme.pref === k ? 'active' : ''} onClick={() => setTheme(k)}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <p className="muted small">Vale solo per questo PC. Le immagini e i PDF esportati restano sempre chiari, per essere leggibili su WhatsApp.</p>
+          </div>
+
+          <div className="card mt">
             <h3 className="card-title">Esporta / importa dati</h3>
             <p className="muted small">
               Il file <strong>.amat</strong> contiene tutti i dati (giocatori, partite, pubblicazioni). Usalo per copiare i dati su un

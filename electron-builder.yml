@@ -3,6 +3,10 @@ productName: Amatori
 directories:
   buildResources: build
   output: dist
+# Solo le traduzioni dell'interfaccia Chromium che servono: -40 MB circa.
+electronLanguages:
+  - it
+  - en-US
 files:
   - out/**
   - package.json

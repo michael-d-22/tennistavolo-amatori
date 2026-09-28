@@ -124,6 +124,17 @@ app.on('browser-window-created', (_e, win) => {
       await js(`document.querySelector('.standings tbody tr').click()`)
       await wait(400)
       await shot('giocatore')
+      // Stesse pagine principali con il tema chiaro
+      await js(`document.querySelector('.theme-toggle').click()`)
+      await wait(300)
+      await shot('giocatore-chiaro')
+      for (const [name, idx] of pages.filter(([n]) => ['classifica', 'partite', 'matrice', 'impostazioni'].includes(n))) {
+        await js(`[...document.querySelectorAll('.nav-item')][${idx - 1}].click()`)
+        await wait(400)
+        await shot(`${name}-chiaro`)
+      }
+      await js(`document.querySelector('.theme-toggle').click()`)
+
       // Export dalla pagina Pubblica
       await js(`[...document.querySelectorAll('.nav-item')][5].click()`)
       await wait(300)

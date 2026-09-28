@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { daysBetween, formatDate, todayISO } from '@core/format'
 import { useStore } from './store'
+import { setTheme, useTheme } from './theme'
 import { ClassificaPage } from './pages/Classifica'
 import { NuovaPartitaPage } from './pages/NuovaPartita'
 import { PartitePage } from './pages/Partite'
@@ -35,6 +36,7 @@ const NAV: { page: Route['page']; label: string; icon: string; key: string }[] =
 
 export function App() {
   const { data, computed, undo, undoLabel, isNew } = useStore()
+  const theme = useTheme()
   const [route, setRoute] = useState<Route>({ page: 'classifica' })
   const navigate: Navigate = (r) => {
     setRoute(r)
@@ -130,6 +132,13 @@ export function App() {
           ) : (
             <div className="muted small">Nessuna classifica pubblicata</div>
           )}
+          <button
+            className="btn btn-ghost btn-sm theme-toggle"
+            onClick={() => setTheme(theme.resolved === 'dark' ? 'light' : 'dark')}
+            title="Cambia tema (anche da Impostazioni)"
+          >
+            {theme.resolved === 'dark' ? '☀️ Tema chiaro' : '🌙 Tema scuro'}
+          </button>
           {undoLabel && (
             <button className="btn btn-ghost btn-sm undo" onClick={undo} title="Ctrl+Z">
               ↶ Annulla {undoLabel}

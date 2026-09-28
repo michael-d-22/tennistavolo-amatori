@@ -34,6 +34,7 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
 - **Pubblicazione**: immagine o testo pronti da incollare su WhatsApp, oppure PNG, PDF, Excel e CSV.
 - **Partite escluse, mai cancellate**: restano visibili barrate con il motivo e si possono includere o
   escludere a mano.
+- **Tema scuro** (predefinito) e **tema chiaro**, oppure automatico come Windows.
 - **Backup automatici**, ripristino con un clic, **Ctrl+Z** per annullare l'ultima modifica.
 - **Esporta e importa i dati** (file `.amat`) per spostarli su un altro PC o, in futuro, su Android.
 
@@ -45,7 +46,11 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
 | --- | --- |
 | ![Scheda giocatore](docs/screenshots/giocatore.png) | ![Pubblicazione](docs/screenshots/pubblica.png) |
 
-Esempio di immagine esportata per il gruppo:
+Tema chiaro:
+
+<p align="center"><img src="docs/screenshots/classifica-chiaro.png" width="720" alt="Classifica con tema chiaro"></p>
+
+Esempio di immagine esportata per il gruppo (sempre chiara, qualunque sia il tema):
 
 <p align="center"><img src="docs/screenshots/export-classifica.png" width="560" alt="Classifica esportata"></p>
 

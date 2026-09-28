@@ -25,7 +25,7 @@ const CARD_CSS = `
 .amr-t tr.top1 td{background:#fef3c7}.amr-t tr.top2 td{background:#f1f5f9}.amr-t tr.top3 td{background:#ffedd5}
 .amr-t tr.unq .name,.amr-t tr.unq .pts{color:#b91c1c}
 .amr-t tr.ret td{color:#94a3b8}
-.up{color:#15803d;font-weight:600}.down{color:#b91c1c;font-weight:600}.eq{color:#94a3b8}
+.amr-up{color:#15803d;font-weight:600}.amr-down{color:#b91c1c;font-weight:600}.amr-eq{color:#94a3b8}
 .amr-badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#fee2e2;color:#b91c1c;margin-left:6px;font-weight:600}
 .amr-foot{margin-top:14px;font-size:12px;color:#64748b;display:flex;justify-content:space-between;gap:16px}
 `
@@ -39,18 +39,18 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
       const cls = ret ? 'ret' : !s.qualified ? 'unq' : pos && pos <= 3 ? `top${pos}` : ''
       const mv =
         ret || s.positionChange == null
-          ? '<span class="eq">–</span>'
+          ? '<span class="amr-eq">–</span>'
           : s.positionChange > 0
-            ? `<span class="up">▲${s.positionChange}</span>`
+            ? `<span class="amr-up">▲${s.positionChange}</span>`
             : s.positionChange < 0
-              ? `<span class="down">▼${-s.positionChange}</span>`
-              : '<span class="eq">=</span>'
+              ? `<span class="amr-down">▼${-s.positionChange}</span>`
+              : '<span class="amr-eq">=</span>'
       const d = s.deltaSincePublish == null ? '' : Math.round(s.deltaSincePublish)
-      const dHtml = d === '' ? '<span class="eq">–</span>' : d > 0 ? `<span class="up">${signed(d)}</span>` : d < 0 ? `<span class="down">${d}</span>` : '<span class="eq">0</span>'
+      const dHtml = d === '' ? '<span class="amr-eq">–</span>' : d > 0 ? `<span class="amr-up">${signed(d)}</span>` : d < 0 ? `<span class="amr-down">${d}</span>` : '<span class="amr-eq">0</span>'
       return `<tr class="${cls}">
         <td class="amr-pos">${ret ? '' : pos && pos <= 3 ? medals[pos - 1] : pos}</td>
         <td class="n">${mv}</td>
-        <td class="name">${esc(s.player.name)}${ret ? ' <span class="eq">(ritirato)</span>' : !s.qualified ? '<span class="amr-badge">fuori classifica</span>' : ''}</td>
+        <td class="name">${esc(s.player.name)}${ret ? ' <span class="amr-eq">(ritirato)</span>' : !s.qualified ? '<span class="amr-badge">fuori classifica</span>' : ''}</td>
         <td class="n pts">${Math.round(s.rating)}</td>
         <td class="n">${dHtml}</td>
         <td class="n">${s.played}</td>

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, nativeTheme, shell } from 'electron'
 import { promises as fs } from 'fs'
 import { join } from 'path'
 
@@ -160,10 +160,15 @@ function registerIpc(win: BrowserWindow) {
   ipcMain.handle('clipboard:text', (_e, text: string) => clipboard.writeText(text))
   ipcMain.handle('clipboard:image', (_e, dataUrl: string) => clipboard.writeImage(nativeImage.createFromDataURL(dataUrl)))
   ipcMain.handle('shell:showItem', (_e, path: string) => shell.showItemInFolder(path))
+  ipcMain.handle('theme:set', (_e, theme: 'dark' | 'light' | 'system') => {
+    nativeTheme.themeSource = theme
+  })
   ipcMain.handle('app:info', () => ({ version: app.getVersion(), dataDir: dataDir() }))
 }
 
 function createWindow() {
+  // Tema scuro predefinito finché l'interfaccia non comunica la preferenza salvata.
+  nativeTheme.themeSource = 'dark'
   const win = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -171,7 +176,7 @@ function createWindow() {
     minHeight: 640,
     title: 'Amatori',
     icon: app.isPackaged ? undefined : join(__dirname, '../../build/icon.png'),
-    backgroundColor: '#f5f6f8',
+    backgroundColor: '#0b1120',
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

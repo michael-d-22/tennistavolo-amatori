@@ -141,7 +141,7 @@ function registerIpc(win: BrowserWindow) {
     if (res.canceled || !res.filePath) return null
     const ExcelJS = (await import('exceljs')).default
     const wb = new ExcelJS.Workbook()
-    wb.creator = 'Amatori'
+    wb.creator = 'Tornei e partite interne tennistavolo'
     for (const s of opts.sheets) {
       const ws = wb.addWorksheet(s.name, { views: [{ state: 'frozen', ySplit: 1 }] })
       ws.columns = s.columns.map((c) => ({ header: c.header, width: c.width ?? 12 }))
@@ -174,7 +174,7 @@ function createWindow() {
     height: 820,
     minWidth: 960,
     minHeight: 640,
-    title: 'Amatori',
+    title: 'Tornei e partite interne tennistavolo',
     icon: app.isPackaged ? undefined : join(__dirname, '../../build/icon.png'),
     backgroundColor: '#0b1120',
     autoHideMenuBar: true,
@@ -200,8 +200,10 @@ function createWindow() {
   }
 }
 
-// Cartella dati alternativa (usata per i test e per eventuali installazioni "da chiavetta").
-if (process.env['AMATORI_DATA_DIR']) app.setPath('userData', process.env['AMATORI_DATA_DIR'])
+// Cartella dati alternativa (AMATORI_DATA_DIR) per i test e per eventuali installazioni "da chiavetta".
+// La cartella dati resta %APPDATA%\Amatori anche se il nome dell'app cambia,
+// così i dati già inseriti non si perdono.
+app.setPath('userData', process.env['AMATORI_DATA_DIR'] || join(app.getPath('appData'), 'Amatori'))
 
 if (!app.requestSingleInstanceLock()) {
   app.quit()

@@ -1,9 +1,9 @@
 {
   "name": "amatori",
-  "productName": "Amatori",
+  "productName": "Tornei e partite interne tennistavolo",
   "version": "1.0.0",
-  "description": "Classifica Elo interna del gruppo AMATORI - tennistavolo",
-  "author": "Amatori",
+  "description": "Tornei e partite interne tennistavolo - classifica Elo interna del gruppo AMATORI",
+  "author": "Tornei e partite interne tennistavolo",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {

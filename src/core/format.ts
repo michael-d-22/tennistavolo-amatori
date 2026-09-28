@@ -33,7 +33,7 @@ function arrow(s: Standing): string {
 export function whatsappText(data: AppData, c: Computed, date: string): string {
   const lines: string[] = []
   lines.push(`🏓 *CLASSIFICA AMATORI* 🏓`)
-  lines.push(`_${data.season.name} – aggiornata al ${formatDate(date)}_`)
+  lines.push(`_Tornei e partite interne tennistavolo · ${data.season.name} – aggiornata al ${formatDate(date)}_`)
   lines.push('')
   const active = c.standings.filter((s) => s.player.status === 'active')
   for (const s of active) {

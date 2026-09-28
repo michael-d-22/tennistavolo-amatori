@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { daysBetween, formatDate, todayISO } from '@core/format'
 import { useStore } from './store'
+import logo from './assets/logo.png'
 import { setTheme, useTheme } from './theme'
 import { ClassificaPage } from './pages/Classifica'
 import { NuovaPartitaPage } from './pages/NuovaPartita'
@@ -102,11 +103,11 @@ export function App() {
     <div className="layout">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-ball">🏓</span>
-          <div>
-            <div className="brand-name">AMATORI</div>
-            <div className="brand-season">{data.season.name}</div>
+          <div className="brand-logo">
+            <img src={logo} alt="Tornei e partite interne tennistavolo" />
           </div>
+          <div className="brand-name">Classifica AMATORI</div>
+          <div className="brand-season">{data.season.name}</div>
         </div>
         <nav>
           {NAV.map((n) => (

@@ -1,5 +1,5 @@
 appId: it.amatori.classifica
-productName: Amatori
+productName: Tornei e partite interne tennistavolo
 directories:
   buildResources: build
   output: dist
@@ -20,7 +20,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  shortcutName: Amatori
-  artifactName: Amatori-Setup-${version}.exe
+  shortcutName: Tornei e partite interne tennistavolo
+  artifactName: TennistavoloAmatori-Setup-${version}.exe
 portable:
-  artifactName: Amatori-Portable-${version}.exe
+  artifactName: TennistavoloAmatori-Portable-${version}.exe

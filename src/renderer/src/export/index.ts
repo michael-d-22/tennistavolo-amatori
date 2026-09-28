@@ -66,7 +66,7 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
     <div class="amr-head">
       <div class="amr-ball">🏓</div>
       <div><div class="amr-title">CLASSIFICA AMATORI</div>
-      <div class="amr-sub">${esc(data.season.name)} · aggiornata al ${formatDate(date)}</div></div>
+      <div class="amr-sub">Tornei e partite interne tennistavolo · ${esc(data.season.name)} · aggiornata al ${formatDate(date)}</div></div>
     </div>
     <table class="amr-t">
       <thead><tr><th class="amr-pos">#</th><th></th><th>Giocatore</th><th class="n">Punti</th><th class="n">Var.</th><th class="n">G</th><th class="n">V</th><th class="n">P</th><th class="n">Set</th></tr></thead>

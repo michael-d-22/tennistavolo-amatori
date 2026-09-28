@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="build/icon.png" width="96" alt="Icona Amatori">
+  <img src="src/renderer/src/assets/logo.png" width="220" alt="Tornei e partite interne tennistavolo">
 </p>
 
-<h1 align="center">Amatori</h1>
+<h1 align="center">Tornei e partite interne tennistavolo</h1>
 
 <p align="center">
-  Classifica Elo interna per il gruppo di tennistavolo <strong>AMATORI</strong>.<br>
+  Classifica Elo interna del gruppo <strong>AMATORI</strong> di un circolo di tennistavolo (tennistavolo).<br>
   App desktop per Windows · Electron + React + TypeScript
 </p>
 
@@ -50,7 +50,7 @@ Tema chiaro:
 
 <p align="center"><img src="docs/screenshots/classifica-chiaro.png" width="720" alt="Classifica con tema chiaro"></p>
 
-Esempio di immagine esportata per il gruppo (sempre chiara, qualunque sia il tema):
+Esempio di immagine esportata per il gruppo. Gli export (immagine, PDF, testo WhatsApp, Excel) usano il nome pubblico **Tornei e partite interne tennistavolo** e sono sempre chiari, qualunque sia il tema:
 
 <p align="center"><img src="docs/screenshots/export-classifica.png" width="560" alt="Classifica esportata"></p>
 
@@ -75,8 +75,8 @@ Tutti i numeri (punti di partenza, K, limite e soglia, giorni tra le pubblicazio
 
 Dalla pagina delle release, oppure compilando il progetto (vedi sotto), si ottengono due file:
 
-- `Amatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
-- `Amatori-Portable-x.y.z.exe`: si avvia senza installare nulla.
+- `TennistavoloAmatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
+- `TennistavoloAmatori-Portable-x.y.z.exe`: si avvia senza installare nulla.
 
 L'eseguibile non è firmato digitalmente: al primo avvio Windows potrebbe mostrare l'avviso
 “PC protetto da Windows”. Cliccare **Ulteriori informazioni → Esegui comunque**.
@@ -105,7 +105,7 @@ npm run dev          # avvia l'app in modalità sviluppo
 npm test             # test del motore di calcolo (Vitest)
 npm run typecheck    # controllo dei tipi TypeScript
 npm run screenshots  # avvia l'app con dati di prova e salva screenshot ed export in ./snaps
-npm run icon         # rigenera build/icon.png
+npm run icon         # rigenera icona e logo da build/logo-source.webp
 npm run build:win    # crea installer e versione portable in ./dist
 ```
 

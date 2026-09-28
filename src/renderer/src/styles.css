@@ -185,25 +185,27 @@ textarea {
   padding: 18px 12px;
 }
 .brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 8px 20px;
+  padding: 0 4px 18px;
+  text-align: center;
 }
-.brand-ball {
-  font-size: 26px;
-  background: var(--accent);
-  border-radius: 50%;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.brand-logo {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+.brand-logo img {
+  display: block;
+  width: 100%;
+  max-width: 170px;
+  margin: 0 auto;
 }
 .brand-name {
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  font-size: 13px;
 }
 .brand-season {
   font-size: 12px;
@@ -1060,16 +1062,16 @@ tr.excluded .btn.danger {
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border);
 }
-.welcome-ball {
-  font-size: 34px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 14px;
+.welcome-logo {
+  display: block;
+  width: 200px;
+  margin: 0 auto 18px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 12px;
+}
+.welcome h1 {
+  text-align: center;
 }
 .welcome h1 {
   font-size: 26px;

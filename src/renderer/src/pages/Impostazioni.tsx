@@ -191,7 +191,7 @@ export function ImpostazioniPage() {
 
           {info && (
             <p className="muted small mt">
-              Amatori v{info.version} · dati in {info.dataDir}
+              Tornei e partite interne tennistavolo v{info.version} · dati in {info.dataDir}
             </p>
           )}
         </div>

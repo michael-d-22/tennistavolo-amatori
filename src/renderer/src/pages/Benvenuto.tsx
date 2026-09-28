@@ -3,6 +3,7 @@ import { todayISO } from '@core/format'
 import { addPlayer, updateMeta } from '@core/mutations'
 import { parseDataFile } from '@core/sync'
 import { useStore } from '../store'
+import logo from '../assets/logo.png'
 
 /** Prima apertura: nome stagione e lista iniziale dei giocatori (uno per riga). */
 export function BenvenutoPage() {
@@ -34,8 +35,8 @@ export function BenvenutoPage() {
   return (
     <div className="welcome">
       <div className="welcome-card">
-        <div className="welcome-ball">🏓</div>
-        <h1>Benvenuto in Amatori</h1>
+        <img className="welcome-logo" src={logo} alt="Tornei e partite interne tennistavolo" />
+        <h1>Classifica AMATORI</h1>
         <p className="muted">
           Classifica interna con sistema Elo (K {data.settings.k}, partenza {data.settings.startRating} punti). Le regole della stagione
           si possono modificare in qualsiasi momento da Impostazioni.

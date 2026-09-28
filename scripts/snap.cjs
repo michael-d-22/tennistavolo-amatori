@@ -75,7 +75,8 @@ let hooked = false
 app.on('browser-window-created', (_e, win) => {
   if (hooked) return
   hooked = true
-  win.setSize(1366, 860)
+  const [sw, sh] = (process.env.SNAP_SIZE || '1366x860').split('x').map(Number)
+  win.setSize(sw, sh)
   win.webContents.once('did-finish-load', async () => {
     try {
       await wait(800)

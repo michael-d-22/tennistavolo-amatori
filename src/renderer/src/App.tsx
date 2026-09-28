@@ -155,11 +155,7 @@ export function App() {
             >
               {n.icon}
               {n.label}
-              {n.page === 'pubblica' && publishDue ? (
-                <span className="nav-due" title="È ora di pubblicare la classifica" />
-              ) : (
-                <span className="kbd">{n.key}</span>
-              )}
+              {n.page === 'pubblica' && publishDue && <span className="nav-due" title="È ora di pubblicare la classifica" />}
             </button>
           ))}
         </nav>
@@ -184,7 +180,8 @@ export function App() {
             {theme.resolved === 'dark' ? <IconSun /> : <IconMoon />}
             {theme.resolved === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
           </button>
-          {undoLabel && (
+          {/* Una pubblicazione si toglie solo da Pubblica → Elimina, non con il pulsante Annulla. */}
+          {undoLabel && undoLabel !== 'pubblicazione' && (
             <button className="sidebar-btn undo" onClick={undo} title="Ctrl+Z">
               <IconUndo />
               <span>Annulla {undoLabel}</span>

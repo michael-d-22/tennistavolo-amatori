@@ -1219,6 +1219,8 @@ tr.excluded .btn.danger {
   display: inline-block;
 }
 .matrix-wrap {
+  width: fit-content;
+  max-width: 100%;
   overflow: auto;
   padding: 16px;
 }
@@ -1314,6 +1316,7 @@ tr.excluded .btn.danger {
   margin-bottom: 14px;
 }
 .ranking-preview {
+  max-width: 620px;
   border: 1px solid var(--rule);
   overflow: hidden;
   line-height: normal;

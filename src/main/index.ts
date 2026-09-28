@@ -193,6 +193,17 @@ function createWindow() {
 
   registerIpc(win)
 
+  // L'interfaccia è disegnata per circa 1400×880: su finestre più grandi (schermo intero, monitor grandi)
+  // si ingrandisce tutta in proporzione invece di lasciare testi piccoli e spazi vuoti.
+  const fitZoom = () => {
+    if (win.isDestroyed()) return
+    const [w, h] = win.getContentSize()
+    const factor = Math.min(1.6, Math.max(1, Math.min(w / 1400, h / 880)))
+    win.webContents.setZoomFactor(Math.round(factor * 100) / 100)
+  }
+  win.on('resize', fitZoom)
+  win.webContents.on('did-finish-load', fitZoom)
+
   if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {

@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react'
-import { formatDate } from '@core/format'
+import { fmtDelta, formatDate, formatLongDate } from '@core/format'
 import { deleteMatch, restoreMatch, setMatchOverride, updateMatch } from '@core/mutations'
 import { isValidScore } from '@core/rules'
 import type { MatchResult } from '@core/standings'
 import type { Match, OverrideMode } from '@core/types'
 import { useStore } from '../store'
 import { Confirm, Empty, Modal, PageHead } from '../components/ui'
+import { IconNote } from '../components/icons'
 import type { Navigate } from '../App'
 
-export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; initialPlayer?: string }) {
+export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlayer?: string }) {
   const { data, computed, update, toast } = useStore()
   const [player, setPlayer] = useState(initialPlayer ?? '')
   const [status, setStatus] = useState<'all' | 'counted' | 'excluded' | 'deleted'>('all')
@@ -47,15 +48,10 @@ export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; i
     <>
       <PageHead
         title="Partite"
-        subtitle={`${computed.results.length} partite registrate`}
-        actions={
-          <button className="btn btn-primary" onClick={() => navigate({ page: 'nuova' })}>
-            ➕ Nuova partita
-          </button>
-        }
+        subtitle={`${computed.results.length} partite registrate, raggruppate per serata`}
       />
       <div className="toolbar">
-        <select value={player} onChange={(e) => setPlayer(e.target.value)}>
+        <select value={player} onChange={(e) => setPlayer(e.target.value)} aria-label="Filtra per giocatore">
           <option value="">Tutti i giocatori</option>
           {players.map((p) => (
             <option key={p.id} value={p.id}>
@@ -83,10 +79,13 @@ export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; i
         <Empty>Nessuna partita.</Empty>
       ) : (
         groups.map(([date, list]) => (
-          <div className="card day-group" key={date}>
-            <h3 className="card-title">
-              {formatDate(date)} <span className="muted small">· {list.length} partite</span>
-            </h3>
+          <section className="day-group" key={date}>
+            <div className="section-head">
+              <h2>{formatLongDate(date)}</h2>
+              <span className="mono dim small">
+                {list.length} {list.length === 1 ? 'partita' : 'partite'}
+              </span>
+            </div>
             <table className="table matches">
               <tbody>
                 {list.map((r) => {
@@ -95,14 +94,14 @@ export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; i
                   return (
                     <tr key={m.id} className={r.eval.counted ? '' : 'excluded'}>
                       <td className={`right ${aWon ? 'winner' : ''}`}>{nameOf(m.playerA)}</td>
-                      <td className="num score">
-                        {m.setsA} – {m.setsB}
+                      <td className="score">
+                        {m.setsA}–{m.setsB}
                       </td>
                       <td className={!aWon ? 'winner' : ''}>{nameOf(m.playerB)}</td>
-                      <td className="num small">
+                      <td className="num mono small dim">
                         {r.eval.counted ? (
-                          <span title={`${nameOf(m.playerA)} ${r.deltaA >= 0 ? '+' : ''}${r.deltaA.toFixed(1)} · ${nameOf(m.playerB)} ${-r.deltaA >= 0 ? '+' : ''}${(-r.deltaA).toFixed(1)}`}>
-                            ±{Math.abs(r.deltaA).toFixed(1)} pt
+                          <span title={`${nameOf(m.playerA)} ${fmtDelta(r.deltaA, 1)} · ${nameOf(m.playerB)} ${fmtDelta(-r.deltaA, 1)}`}>
+                            ±{Math.abs(r.deltaA).toFixed(1).replace('.', ',')} pt
                           </span>
                         ) : null}
                       </td>
@@ -121,9 +120,8 @@ export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; i
                           </span>
                         )}
                         {m.note && (
-                          <span className="note" title={m.note}>
-                            {' '}
-                            📝
+                          <span className="note" title={m.note} aria-label={`Nota: ${m.note}`}>
+                            <IconNote />
                           </span>
                         )}
                       </td>
@@ -154,7 +152,7 @@ export function PartitePage({ navigate, initialPlayer }: { navigate: Navigate; i
                 })}
               </tbody>
             </table>
-          </div>
+          </section>
         ))
       )}
 

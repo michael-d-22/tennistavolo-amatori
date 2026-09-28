@@ -1,8 +1,20 @@
-import { useEffect, useState } from 'react'
-import { daysBetween, formatDate, todayISO } from '@core/format'
+import { useEffect, useState, type ReactNode } from 'react'
+import { daysBetween, formatLongDate, todayISO } from '@core/format'
 import { useStore } from './store'
 import logo from './assets/logo.png'
 import { setTheme, useTheme } from './theme'
+import {
+  IconGrid,
+  IconList,
+  IconMoon,
+  IconPlayers,
+  IconPlus,
+  IconPublish,
+  IconRanking,
+  IconSettings,
+  IconSun,
+  IconUndo
+} from './components/icons'
 import { ClassificaPage } from './pages/Classifica'
 import { NuovaPartitaPage } from './pages/NuovaPartita'
 import { PartitePage } from './pages/Partite'
@@ -25,14 +37,26 @@ export type Route =
 
 export type Navigate = (r: Route) => void
 
-const NAV: { page: Route['page']; label: string; icon: string; key: string }[] = [
-  { page: 'classifica', label: 'Classifica', icon: '🏆', key: '1' },
-  { page: 'nuova', label: 'Nuova partita', icon: '➕', key: '2' },
-  { page: 'partite', label: 'Partite', icon: '📋', key: '3' },
-  { page: 'matrice', label: 'Scontri diretti', icon: '▦', key: '4' },
-  { page: 'giocatori', label: 'Giocatori', icon: '👥', key: '5' },
-  { page: 'pubblica', label: 'Pubblica', icon: '📤', key: '6' },
-  { page: 'impostazioni', label: 'Impostazioni', icon: '⚙️', key: '7' }
+type Page = Route['page']
+
+// Scorciatoie Ctrl+1…7; "Nuova partita" (2) è il pulsante rosso sopra il menu.
+const SHORTCUTS: Record<string, Page> = {
+  '1': 'classifica',
+  '2': 'nuova',
+  '3': 'partite',
+  '4': 'matrice',
+  '5': 'giocatori',
+  '6': 'pubblica',
+  '7': 'impostazioni'
+}
+
+const NAV: { page: Page; label: string; icon: ReactNode; key: string }[] = [
+  { page: 'classifica', label: 'Classifica', icon: <IconRanking />, key: '1' },
+  { page: 'partite', label: 'Partite', icon: <IconList />, key: '3' },
+  { page: 'matrice', label: 'Scontri diretti', icon: <IconGrid />, key: '4' },
+  { page: 'giocatori', label: 'Giocatori', icon: <IconPlayers />, key: '5' },
+  { page: 'pubblica', label: 'Pubblica', icon: <IconPublish />, key: '6' },
+  { page: 'impostazioni', label: 'Impostazioni', icon: <IconSettings />, key: '7' }
 ]
 
 export function App() {
@@ -52,10 +76,9 @@ export function App() {
         e.preventDefault()
         undo()
       }
-      if (e.ctrlKey && /^[1-7]$/.test(e.key)) {
+      if (e.ctrlKey && SHORTCUTS[e.key]) {
         e.preventDefault()
-        const n = NAV.find((x) => x.key === e.key)!
-        setRoute({ page: n.page } as Route)
+        setRoute({ page: SHORTCUTS[e.key] } as Route)
       }
     }
     window.addEventListener('keydown', onKey)
@@ -106,43 +129,65 @@ export function App() {
           <div className="brand-logo">
             <img src={logo} alt="Tornei e partite interne tennistavolo" />
           </div>
-          <div className="brand-name">Classifica AMATORI</div>
+          <div className="brand-name">Classifica Amatori</div>
           <div className="brand-season">{data.season.name}</div>
         </div>
-        <nav>
+
+        <button
+          className={`btn btn-red btn-block ${current === 'nuova' ? 'is-current' : ''}`}
+          data-page="nuova"
+          onClick={() => navigate({ page: 'nuova' })}
+          title="Ctrl+2"
+        >
+          <IconPlus />
+          Nuova partita
+        </button>
+
+        <nav className="nav">
           {NAV.map((n) => (
             <button
               key={n.page}
-              className={`nav-item ${current === n.page ? 'active' : ''} ${n.page === 'nuova' ? 'nav-primary' : ''}`}
+              data-page={n.page}
+              className={`nav-item ${current === n.page ? 'active' : ''}`}
+              aria-current={current === n.page ? 'page' : undefined}
               onClick={() => navigate({ page: n.page } as Route)}
               title={`Ctrl+${n.key}`}
             >
-              <span className="nav-icon">{n.icon}</span>
+              {n.icon}
               {n.label}
-              {n.page === 'pubblica' && publishDue && <span className="dot" title="È ora di pubblicare la classifica" />}
+              {n.page === 'pubblica' && publishDue ? (
+                <span className="nav-due" title="È ora di pubblicare la classifica" />
+              ) : (
+                <span className="kbd">{n.key}</span>
+              )}
             </button>
           ))}
         </nav>
+
         <div className="sidebar-foot">
-          {last ? (
-            <div className="muted small">
-              Ultima pubblicazione:
-              <br />
-              <strong>{formatDate(last.date)}</strong> ({daysSince === 0 ? 'oggi' : `${daysSince} gg fa`})
-            </div>
-          ) : (
-            <div className="muted small">Nessuna classifica pubblicata</div>
-          )}
+          <div className="sidebar-publish">
+            {last ? (
+              <>
+                Ultima pubblicazione
+                <br />
+                <strong>{formatLongDate(last.date)}</strong> · {daysSince === 0 ? 'oggi' : daysSince === 1 ? 'ieri' : `${daysSince} giorni fa`}
+              </>
+            ) : (
+              'Nessuna classifica pubblicata'
+            )}
+          </div>
           <button
-            className="btn btn-ghost btn-sm theme-toggle"
+            className="sidebar-btn theme-toggle"
             onClick={() => setTheme(theme.resolved === 'dark' ? 'light' : 'dark')}
             title="Cambia tema (anche da Impostazioni)"
           >
-            {theme.resolved === 'dark' ? '☀️ Tema chiaro' : '🌙 Tema scuro'}
+            {theme.resolved === 'dark' ? <IconSun /> : <IconMoon />}
+            {theme.resolved === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
           </button>
           {undoLabel && (
-            <button className="btn btn-ghost btn-sm undo" onClick={undo} title="Ctrl+Z">
-              ↶ Annulla {undoLabel}
+            <button className="sidebar-btn undo" onClick={undo} title="Ctrl+Z">
+              <IconUndo />
+              <span>Annulla {undoLabel}</span>
             </button>
           )}
         </div>

@@ -15,6 +15,22 @@ export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b.slice(0, 10)) - Date.parse(a.slice(0, 10))) / 86400000)
 }
 
+const MONTHS = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']
+
+/** "15 settembre" (con l'anno solo se diverso da quello corrente). */
+export function formatLongDate(iso: string, now = new Date()): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  return `${d} ${MONTHS[m - 1]}${y !== now.getFullYear() ? ` ${y}` : ''}`
+}
+
+/** Numero con segno all'italiana: "+15,2", "−65", "0". */
+export function fmtDelta(n: number, digits = 0): string {
+  const r = Number(n.toFixed(digits))
+  if (r === 0) return digits ? (0).toFixed(digits).replace('.', ',') : '0'
+  const v = Math.abs(r).toFixed(digits).replace('.', ',')
+  return r > 0 ? `+${v}` : `−${v}`
+}
+
 export function signed(n: number, digits = 0): string {
   const v = n.toFixed(digits)
   return n > 0 ? `+${v}` : v

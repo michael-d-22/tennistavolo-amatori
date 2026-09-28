@@ -68,7 +68,7 @@ export function ImpostazioniPage() {
 
   return (
     <>
-      <PageHead title="Impostazioni e dati" />
+      <PageHead title="Impostazioni" />
 
       <div className="settings-grid">
         <div className="card">
@@ -125,8 +125,8 @@ export function ImpostazioniPage() {
             <div className="seg">
               {(
                 [
-                  ['dark', '🌙 Scuro'],
-                  ['light', '☀️ Chiaro'],
+                  ['dark', 'Scuro'],
+                  ['light', 'Chiaro'],
                   ['system', 'Come Windows']
                 ] as [ThemePref, string][]
               ).map(([k, l]) => (
@@ -147,10 +147,10 @@ export function ImpostazioniPage() {
             </p>
             <div className="row">
               <button className="btn" onClick={exportAll}>
-                ⬆️ Esporta tutti i dati
+                Esporta tutti i dati
               </button>
               <button className="btn" onClick={importFile}>
-                ⬇️ Importa / unisci da file
+                Importa e unisci da file
               </button>
             </div>
           </div>

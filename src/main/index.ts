@@ -148,7 +148,7 @@ function registerIpc(win: BrowserWindow) {
       ws.addRows(s.rows)
       const head = ws.getRow(1)
       head.font = { bold: true, color: { argb: 'FFFFFFFF' } }
-      head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }
+      head.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF131A45' } }
       s.highlightRows?.forEach((i) => {
         ws.getRow(i + 2).font = { color: { argb: 'FFB91C1C' } }
       })
@@ -176,7 +176,7 @@ function createWindow() {
     minHeight: 640,
     title: 'Tornei e partite interne tennistavolo',
     icon: app.isPackaged ? undefined : join(__dirname, '../../build/icon.png'),
-    backgroundColor: '#0b1120',
+    backgroundColor: '#0e1021',
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),

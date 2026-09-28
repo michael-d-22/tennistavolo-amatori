@@ -85,7 +85,7 @@ app.on('browser-window-created', (_e, win) => {
         fs.writeFileSync(path.join(outDir, `${name}.png`), img.toPNG())
       }
       // Pubblica una classifica, poi aggiungi altre partite per vedere le variazioni.
-      await js(`[...document.querySelectorAll('.nav-item')][5].click()`)
+      await js(`document.querySelector('[data-page="pubblica"]').click()`)
       await wait(300)
       await js(`[...document.querySelectorAll('button')].find(b=>b.textContent.startsWith('Segna pubblicata')).click()`)
       await wait(200)
@@ -99,13 +99,13 @@ app.on('browser-window-created', (_e, win) => {
       await new Promise((r) => win.webContents.once('did-finish-load', r))
       await wait(800)
       for (const [name, idx] of pages) {
-        await js(`[...document.querySelectorAll('.nav-item')][${idx - 1}].click()`)
+        await js(`document.querySelector('[data-page="${name}"]').click()`)
         await wait(400)
         console.log('PAGE', name, await js(`document.querySelector('h1')?.innerText`))
         await shot(name)
       }
       // Nuova partita con anteprima
-      await js(`[...document.querySelectorAll('.nav-item')][1].click()`)
+      await js(`document.querySelector('[data-page="nuova"]').click()`)
       await wait(200)
       // Imposta i menu a tendina come farebbe l'utente (React ascolta l'evento "change").
       const pick = (i, optIndex) =>
@@ -119,7 +119,7 @@ app.on('browser-window-created', (_e, win) => {
       await wait(300)
       await shot('nuova-anteprima')
       // Scheda giocatore
-      await js(`[...document.querySelectorAll('.nav-item')][0].click()`)
+      await js(`document.querySelector('[data-page="classifica"]').click()`)
       await wait(200)
       await js(`document.querySelector('.standings tbody tr').click()`)
       await wait(400)
@@ -129,14 +129,14 @@ app.on('browser-window-created', (_e, win) => {
       await wait(300)
       await shot('giocatore-chiaro')
       for (const [name, idx] of pages.filter(([n]) => ['classifica', 'partite', 'matrice', 'impostazioni'].includes(n))) {
-        await js(`[...document.querySelectorAll('.nav-item')][${idx - 1}].click()`)
+        await js(`document.querySelector('[data-page="${name}"]').click()`)
         await wait(400)
         await shot(`${name}-chiaro`)
       }
       await js(`document.querySelector('.theme-toggle').click()`)
 
       // Export dalla pagina Pubblica
-      await js(`[...document.querySelectorAll('.nav-item')][5].click()`)
+      await js(`document.querySelector('[data-page="pubblica"]').click()`)
       await wait(300)
       for (const label of ['Salva PNG', 'Salva PDF', 'Excel', 'CSV classifica', 'CSV partite']) {
         await js(`[...document.querySelectorAll('.export-grid button')].find(b=>b.textContent.includes('${label}')).click()`)

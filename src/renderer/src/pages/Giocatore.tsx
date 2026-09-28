@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { formatDate, todayISO } from '@core/format'
+import { fmtDelta, formatDate, formatLongDate, todayISO } from '@core/format'
 import { deletePlayer, updatePlayer } from '@core/mutations'
 import { pairKey, previewRetirement } from '@core/rules'
 import { useStore } from '../store'
-import { Confirm, Delta, Empty, Modal, PageHead } from '../components/ui'
+import { Confirm, Delta, Empty, Figures, Meter, Modal, PageHead } from '../components/ui'
 import { EloChart } from '../components/EloChart'
 import type { Navigate } from '../App'
 
@@ -23,6 +23,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
     )
   }
   const p = s.player
+  const retired = p.status === 'retired'
   const { minMatchesPerPair: min, maxMatchesPerPair: max } = data.settings
   const nameOf = (pid: string) => data.players.find((x) => x.id === pid)?.name ?? '?'
 
@@ -49,117 +50,142 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
     return { o, w, l, excluded, pts, count: computed.pairCounted.get(pairKey(id, o.player.id)) ?? 0 }
   })
 
-  const best = s.played ? Math.max(...computed.history.get(id)!.map((h) => h.rating)) : null
+  const history = computed.history.get(id) ?? []
+  const best = s.played ? Math.max(...history.map((h) => h.rating)) : null
+  const standingText = retired
+    ? `ritirato${p.retiredAt ? ` il ${formatLongDate(p.retiredAt)}` : ''}`
+    : s.qualified
+      ? 'in classifica ufficiale'
+      : 'fuori classifica'
 
   return (
     <>
-      <PageHead
-        title={p.name}
-        subtitle={
-          <>
-            <button className="link" onClick={() => navigate({ page: 'giocatori' })}>
-              ← Giocatori
-            </button>{' '}
-            · in gruppo dal {formatDate(p.joinedAt)}
-            {p.status === 'retired' && <> · <span className="chip chip-grey">ritirato{p.retiredAt ? ` dal ${formatDate(p.retiredAt)}` : ''}</span></>}
-          </>
-        }
-        actions={
-          <>
-            <button className="btn btn-ghost" onClick={() => setRenaming(true)}>
-              Rinomina
+      <header className="player-head">
+        <div className="player-id">
+          <span className={`player-rank ${s.position === 1 ? 'first' : ''}`}>{s.position ?? '–'}</span>
+          <div>
+            <button className="back-link" onClick={() => navigate({ page: 'classifica' })}>
+              ← Classifica
             </button>
-            {p.status === 'active' ? (
-              <button className="btn btn-ghost" onClick={() => setRetiring(true)}>
-                Segna come ritirato
-              </button>
-            ) : (
-              <button
-                className="btn btn-ghost"
-                onClick={() =>
-                  update((d) => updatePlayer(d, id, { status: 'active', retiredAt: undefined }), 'riattivazione giocatore') &&
-                  toast(`${p.name} di nuovo attivo: partite ripristinate`)
-                }
-              >
-                Riattiva
-              </button>
-            )}
-            {mine.length === 0 && (
-              <button className="btn btn-ghost danger" onClick={() => setDeleting(true)}>
-                Elimina
-              </button>
-            )}
-          </>
-        }
+            <h1>{p.name}</h1>
+            <p className="page-sub">
+              In gruppo dal {formatLongDate(p.joinedAt)} · {standingText}
+            </p>
+          </div>
+        </div>
+        <div className="page-actions">
+          <button className="btn" onClick={() => setRenaming(true)}>
+            Rinomina
+          </button>
+          {!retired ? (
+            <button className="btn" onClick={() => setRetiring(true)}>
+              Segna come ritirato
+            </button>
+          ) : (
+            <button
+              className="btn"
+              onClick={() =>
+                update((d) => updatePlayer(d, id, { status: 'active', retiredAt: undefined }), 'riattivazione giocatore') &&
+                toast(`${p.name} di nuovo attivo: partite ripristinate`)
+              }
+            >
+              Riattiva
+            </button>
+          )}
+          {mine.length === 0 && (
+            <button className="btn btn-ghost danger" onClick={() => setDeleting(true)}>
+              Elimina
+            </button>
+          )}
+        </div>
+      </header>
+
+      <Figures
+        items={[
+          { value: Math.round(s.rating), label: 'Punti' },
+          {
+            value: s.deltaSincePublish == null ? '—' : fmtDelta(s.deltaSincePublish),
+            label: 'Da ultima pubbl.',
+            tone: s.deltaSincePublish != null && Math.round(s.deltaSincePublish) < 0 ? 'bad' : undefined
+          },
+          { value: `${s.wins}–${s.losses}`, label: 'Vinte–perse' },
+          { value: `${s.setsWon}–${s.setsLost}`, label: 'Set' },
+          { value: best != null ? Math.round(best) : '—', label: 'Massimo' }
+        ]}
       />
 
-      <div className="stats-row">
-        <Stat label="Punti" value={Math.round(s.rating)} />
-        <Stat label="Posizione" value={s.position ?? '–'} sub={s.qualified ? 'classifica ufficiale' : p.status === 'active' ? 'fuori classifica' : ''} />
-        <Stat label="Var. da ultima pubbl." value={<Delta value={s.deltaSincePublish} />} />
-        <Stat label="Vinte / Perse" value={`${s.wins} / ${s.losses}`} sub={s.played ? `${Math.round((s.wins / s.played) * 100)}% vittorie` : ''} />
-        <Stat label="Set" value={`${s.setsWon} / ${s.setsLost}`} />
-        <Stat label="Massimo" value={best != null ? Math.round(best) : '–'} />
-      </div>
+      <div className="player-grid">
+        <section>
+          <div className="section-head">
+            <h2>Andamento</h2>
+            <span className="mono dim small">
+              {s.played} {s.played === 1 ? 'partita valida' : 'partite valide'}
+            </span>
+          </div>
+          <EloChart points={history} start={data.settings.startRating} />
+        </section>
 
-      <div className="card">
-        <h3 className="card-title">Andamento punti</h3>
-        <EloChart points={computed.history.get(id) ?? []} start={data.settings.startRating} />
-      </div>
-
-      <div className="card mt">
-        <h3 className="card-title">Contro ciascun avversario</h3>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Avversario</th>
-              <th className="num">Partite valide</th>
-              <th className="num">V – P</th>
-              <th className="num">Punti guadagnati</th>
-              <th className="num">Escluse</th>
-              <th>Qualificazione</th>
-            </tr>
-          </thead>
-          <tbody>
-            {h2h.map(({ o, w, l, excluded, pts, count }) => (
-              <tr key={o.player.id} className={o.player.status === 'retired' ? 'retired' : ''}>
-                <td className="clickable name-cell" onClick={() => navigate({ page: 'giocatore', id: o.player.id })}>
-                  {o.player.name}
-                </td>
-                <td className="num">
-                  {count} <span className="muted small">/ {max}</span>
-                </td>
-                <td className="num">{count ? `${w} – ${l}` : '–'}</td>
-                <td className="num">{count ? <Delta value={pts} digits={1} /> : '–'}</td>
-                <td className="num">{excluded || ''}</td>
-                <td>
-                  {o.player.status === 'retired' || p.status === 'retired' ? (
-                    <span className="muted small">non richiesta</span>
-                  ) : count >= min ? (
-                    <span className="chip chip-ok">✓</span>
-                  ) : (
-                    <span className="chip chip-bad">
-                      manca{min - count > 1 ? 'no' : ''} {min - count}
-                    </span>
-                  )}
-                </td>
+        <section>
+          <div className="section-head">
+            <h2>Contro ciascuno</h2>
+            <span className="mono dim small">
+              minimo {min} · massimo {max}
+            </span>
+          </div>
+          <table className="table compact">
+            <thead>
+              <tr>
+                <th>Avversario</th>
+                <th>Partite</th>
+                <th className="num">V–P</th>
+                <th className="num">Punti</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {h2h.map(({ o, w, l, excluded, pts, count }) => {
+                const oRetired = o.player.status === 'retired'
+                const required = !oRetired && !retired
+                const missing = required ? Math.max(0, min - count) : 0
+                return (
+                  <tr key={o.player.id} className={oRetired ? 'retired' : ''}>
+                    <td>
+                      <button className="name-link" onClick={() => navigate({ page: 'giocatore', id: o.player.id })}>
+                        {o.player.name}
+                      </button>
+                    </td>
+                    <td>
+                      {oRetired ? (
+                        <span className="mono small faint">ritirato</span>
+                      ) : (
+                        <span className="meter-line" title={excluded > 0 ? `${excluded} partite escluse con questo avversario` : undefined}>
+                          <Meter value={count} max={max} min={required ? min : undefined} label={`${count} partite valide su ${max}`} />
+                          <span className={`mono small ${missing ? 'neg' : 'dim'}`}>
+                            {missing ? (missing === 1 ? 'manca 1' : `mancano ${missing}`) : count >= max ? 'completo' : count}
+                          </span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="num">{count ? `${w}–${l}` : '—'}</td>
+                    <td className="num mono">{count ? <Delta value={pts} digits={1} /> : '—'}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </section>
       </div>
 
-      <div className="card mt">
-        <h3 className="card-title">
-          Ultime partite{' '}
+      <section className="mt-lg">
+        <div className="section-head">
+          <h2>Ultime partite</h2>
           <button className="link small" onClick={() => navigate({ page: 'partite', playerId: id })}>
-            vedi tutte →
+            Vedi tutte
           </button>
-        </h3>
+        </div>
         {mine.length === 0 ? (
-          <p className="muted">Nessuna partita.</p>
+          <p className="dim">Nessuna partita.</p>
         ) : (
-          <table className="table">
+          <table className="table compact">
             <tbody>
               {[...mine]
                 .reverse()
@@ -171,20 +197,28 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                   const d = iAmA ? r.deltaA : -r.deltaA
                   return (
                     <tr key={m.id} className={r.eval.counted ? '' : 'excluded'}>
-                      <td className="small muted">{formatDate(m.date)}</td>
+                      <td className="mono small dim">{formatDate(m.date)}</td>
                       <td>
-                        <span className={`form-dot ${won ? 'win' : 'loss'}`}>{won ? 'V' : 'P'}</span>
+                        <span className={won ? 'form-w' : 'form-l'} /> <span className="mono small">{won ? 'vinta' : 'persa'}</span>
                       </td>
-                      <td>vs {nameOf(iAmA ? m.playerB : m.playerA)}</td>
-                      <td className="num">{iAmA ? `${m.setsA}-${m.setsB}` : `${m.setsB}-${m.setsA}`}</td>
-                      <td className="num">{r.eval.counted ? <Delta value={d} digits={1} /> : <span className="chip chip-bad" title={r.eval.reason}>esclusa</span>}</td>
+                      <td>contro {nameOf(iAmA ? m.playerB : m.playerA)}</td>
+                      <td className="num score-text">{iAmA ? `${m.setsA}–${m.setsB}` : `${m.setsB}–${m.setsA}`}</td>
+                      <td className="num mono">
+                        {r.eval.counted ? (
+                          <Delta value={d} digits={1} />
+                        ) : (
+                          <span className="neg small" title={r.eval.reason}>
+                            esclusa
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
             </tbody>
           </table>
         )}
-      </div>
+      </section>
 
       {renaming && <RenameModal id={id} current={p.name} onClose={() => setRenaming(false)} />}
       {retiring && <RetireModal id={id} onClose={() => setRetiring(false)} navigate={navigate} />}
@@ -201,16 +235,6 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
         />
       )}
     </>
-  )
-}
-
-function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
-  return (
-    <div className="stat">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
-      {sub && <div className="stat-sub">{sub}</div>}
-    </div>
   )
 }
 
@@ -233,7 +257,10 @@ function RenameModal({ id, current, onClose }: { id: string; current: string; on
         </>
       }
     >
-      <input className="block" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} autoFocus />
+      <label className="field-stack">
+        <span className="label">Nome</span>
+        <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} autoFocus />
+      </label>
     </Modal>
   )
 }
@@ -273,18 +300,18 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
         partite (il minimo comune). Le altre restano registrate ma escono dalla classifica, e i punti di tutti vengono ricalcolati.
       </p>
       {preview.excluded.length === 0 ? (
-        <p className="pos">Nessuna partita verrà esclusa.</p>
+        <p>Nessuna partita verrà esclusa.</p>
       ) : (
         <>
           <p>Partite che verranno escluse ({preview.excluded.length}):</p>
-          <table className="table">
+          <table className="table compact">
             <tbody>
               {preview.excluded.map((m) => (
                 <tr key={m.id}>
-                  <td className="small muted">{formatDate(m.date)}</td>
+                  <td className="mono small dim">{formatDate(m.date)}</td>
                   <td>{nameOf(m.playerA)}</td>
-                  <td className="num">
-                    {m.setsA}-{m.setsB}
+                  <td className="num score-text">
+                    {m.setsA}–{m.setsB}
                   </td>
                   <td>{nameOf(m.playerB)}</td>
                 </tr>
@@ -293,7 +320,7 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
           </table>
         </>
       )}
-      <p className="muted small">
+      <p className="dim small">
         Dopo il ritiro puoi comunque decidere a mano: nella pagina{' '}
         <button
           className="link"
@@ -306,8 +333,8 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
         </button>{' '}
         usa “Includi” / “Escludi” su singole partite. Se il giocatore torna, “Riattiva” ripristina tutto.
       </p>
-      <label className="field-inline">
-        Data del ritiro
+      <label className="field-stack">
+        <span className="label">Data del ritiro</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
       </label>
     </Modal>

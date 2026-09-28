@@ -1,81 +1,102 @@
 import { toPng } from 'html-to-image'
-import { formatDate, matchesCsv, signed, standingsCsv, whatsappText } from '@core/format'
-import type { Computed } from '@core/standings'
+import { fmtDelta, formatDate, formatLongDate, matchesCsv, standingsCsv, whatsappText } from '@core/format'
+import type { Computed, Standing } from '@core/standings'
 import type { AppData } from '@core/types'
+import { FONT_FACE_CSS, fontsReady } from '../fonts'
 
-// Un'unica grafica della classifica, usata sia per il PNG sia per il PDF.
+// Un'unica grafica della classifica (quella vista da tutti nel gruppo), usata per PNG, PDF e anteprima.
+// Nome pubblico "Tornei e partite interne tennistavolo", niente logo: è sempre chiara, qualunque sia il tema dell'app.
+
+export const CARD_WIDTH = 1080
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 
+const INK = '#131A45'
+const INK_2 = '#454B6B'
+const INK_3 = '#6B6F86'
+const RED = '#C8231A'
+const RED_INK = '#B8201A'
+
 const CARD_CSS = `
-.amr-card{width:760px;box-sizing:border-box;padding:28px 32px 22px;background:#ffffff;color:#0f172a;
-  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+.amr-card{width:${CARD_WIDTH}px;min-height:1350px;box-sizing:border-box;padding:72px 80px 64px;display:flex;flex-direction:column;
+  background:#F5F2EB;color:${INK};font-family:'IBM Plex Sans',sans-serif;text-align:left}
 .amr-card *{box-sizing:border-box}
-.amr-head{display:flex;align-items:center;gap:14px;padding-bottom:14px;border-bottom:3px solid #1e3a8a;margin-bottom:10px}
-.amr-ball{width:46px;height:46px;border-radius:50%;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:26px}
-.amr-title{font-size:26px;font-weight:800;letter-spacing:.04em;color:#1e3a8a;line-height:1.1}
-.amr-sub{font-size:14px;color:#475569;margin-top:2px}
-.amr-t{width:100%;border-collapse:collapse;font-size:15px}
-.amr-t th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;font-weight:600;text-align:left;padding:8px 6px;border-bottom:1px solid #e2e8f0}
-.amr-t td{padding:7px 6px;border-bottom:1px solid #f1f5f9}
-.amr-t .n{text-align:right;font-variant-numeric:tabular-nums}
-.amr-t .amr-pos{width:40px;font-weight:700;text-align:center}
-.amr-t .name{font-weight:600}
-.amr-t .pts{font-weight:800;font-size:17px;color:#1e3a8a}
-.amr-t tr.top1 td{background:#fef3c7}.amr-t tr.top2 td{background:#f1f5f9}.amr-t tr.top3 td{background:#ffedd5}
-.amr-t tr.unq .name,.amr-t tr.unq .pts{color:#b91c1c}
-.amr-t tr.ret td{color:#94a3b8}
-.amr-up{color:#15803d;font-weight:600}.amr-down{color:#b91c1c;font-weight:600}.amr-eq{color:#94a3b8}
-.amr-badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#fee2e2;color:#b91c1c;margin-left:6px;font-weight:600}
-.amr-foot{margin-top:14px;font-size:12px;color:#64748b;display:flex;justify-content:space-between;gap:16px}
+.amr-mono{font-family:'IBM Plex Mono',monospace}
+.amr-head{display:flex;flex-direction:column;gap:18px;padding-bottom:32px;border-bottom:6px solid ${INK}}
+.amr-top{display:flex;justify-content:space-between;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:${INK_2}}
+.amr-title{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:128px;line-height:.85;font-weight:700;text-transform:uppercase;letter-spacing:-.005em}
+.amr-title span{color:${RED}}
+.amr-date{font-size:24px;color:${INK_2}}
+.amr-cols,.amr-row{display:grid;grid-template-columns:80px 56px minmax(0,1fr) 124px 88px 128px 136px;align-items:center}
+.amr-cols{padding:22px 0 12px;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:${INK_3};border-bottom:2px solid #C2BCAD}
+.amr-cols span{text-align:center}
+.amr-cols span.l{text-align:left}
+.amr-row{border-bottom:2px solid #DDD8CC}
+.amr-pos{font-family:'Barlow Condensed',sans-serif;font-weight:700;line-height:1;text-align:center}
+.amr-mv{font-family:'IBM Plex Mono',monospace;font-size:22px;text-align:center}
+.amr-name{font-weight:600;line-height:1.15}
+.amr-sub{font-size:19px;line-height:1.25;color:${RED_INK};margin-top:4px}
+.amr-pts{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center}
+.amr-var{font-family:'IBM Plex Mono',monospace;font-size:24px;text-align:center}
+.amr-wl{font-family:'IBM Plex Mono',monospace;font-size:22px;text-align:center;color:${INK_2}}
+.amr-down{color:${RED_INK}}
+.amr-flat{color:${INK_3}}
+.amr-foot{margin-top:auto;padding-top:40px;display:flex;justify-content:space-between;gap:24px;font-size:18px;color:${INK_3};line-height:1.5}
+.amr-foot span:last-child{text-align:right}
 `
 
+function missingText(s: Standing): string {
+  const n = s.missing.reduce((a, m) => a + m.missing, 0)
+  return `${n} ${n === 1 ? 'partita' : 'partite'} per entrare in classifica`
+}
+
 export function rankingHtml(data: AppData, c: Computed, date: string): string {
-  const medals = ['🥇', '🥈', '🥉']
-  const rows = c.standings
+  const active = c.standings.filter((s) => s.player.status === 'active')
+  const retired = c.standings.filter((s) => s.player.status === 'retired')
+  // Con tanti giocatori le righe si stringono, così l'immagine resta leggibile su WhatsApp.
+  const n = active.length
+  const size = n <= 8 ? { h: 108, name: 32, pos: 64, pts: 60 } : n <= 12 ? { h: 88, name: 28, pos: 52, pts: 50 } : { h: 72, name: 24, pos: 44, pts: 42 }
+
+  const rows = active
     .map((s) => {
-      const ret = s.player.status === 'retired'
-      const pos = s.position
-      const cls = ret ? 'ret' : !s.qualified ? 'unq' : pos && pos <= 3 ? `top${pos}` : ''
+      const pos = s.position!
       const mv =
-        ret || s.positionChange == null
-          ? '<span class="amr-eq">–</span>'
+        s.positionChange == null
+          ? '<span class="amr-flat">nuovo</span>'
           : s.positionChange > 0
-            ? `<span class="amr-up">▲${s.positionChange}</span>`
+            ? `▲${s.positionChange}`
             : s.positionChange < 0
               ? `<span class="amr-down">▼${-s.positionChange}</span>`
-              : '<span class="amr-eq">=</span>'
-      const d = s.deltaSincePublish == null ? '' : Math.round(s.deltaSincePublish)
-      const dHtml = d === '' ? '<span class="amr-eq">–</span>' : d > 0 ? `<span class="amr-up">${signed(d)}</span>` : d < 0 ? `<span class="amr-down">${d}</span>` : '<span class="amr-eq">0</span>'
-      return `<tr class="${cls}">
-        <td class="amr-pos">${ret ? '' : pos && pos <= 3 ? medals[pos - 1] : pos}</td>
-        <td class="n">${mv}</td>
-        <td class="name">${esc(s.player.name)}${ret ? ' <span class="amr-eq">(ritirato)</span>' : !s.qualified ? '<span class="amr-badge">fuori classifica</span>' : ''}</td>
-        <td class="n pts">${Math.round(s.rating)}</td>
-        <td class="n">${dHtml}</td>
-        <td class="n">${s.played}</td>
-        <td class="n">${s.wins}</td>
-        <td class="n">${s.losses}</td>
-        <td class="n">${s.setsWon}-${s.setsLost}</td>
-      </tr>`
+              : '<span class="amr-flat">=</span>'
+      const d = s.deltaSincePublish == null ? null : Math.round(s.deltaSincePublish)
+      const dHtml = d == null ? '<span class="amr-flat">—</span>' : d < 0 ? `<span class="amr-down">${fmtDelta(d)}</span>` : fmtDelta(d)
+      return `<div class="amr-row" style="height:${size.h}px">
+        <span class="amr-pos" style="font-size:${size.pos}px${pos === 1 ? `;color:${RED}` : ''}">${pos}</span>
+        <span class="amr-mv">${mv}</span>
+        <div><div class="amr-name" style="font-size:${size.name}px">${esc(s.player.name)}</div>${s.qualified ? '' : `<div class="amr-sub">${missingText(s)}</div>`}</div>
+        <span class="amr-pts" style="font-size:${size.pts}px">${Math.round(s.rating)}</span>
+        <span class="amr-var">${dHtml}</span>
+        <span class="amr-wl">${s.wins}–${s.losses}</span>
+        <span class="amr-wl">${s.setsWon}–${s.setsLost}</span>
+      </div>`
     })
     .join('')
+
   const valid = c.results.filter((r) => r.eval.counted).length
-  const since = c.lastSnapshot ? `Variazioni rispetto al ${formatDate(c.lastSnapshot.date)}` : 'Prima pubblicazione'
+  const since = c.lastSnapshot ? ` · variazioni dal ${formatLongDate(c.lastSnapshot.date)}` : ''
+  const season = data.season.name.replace(/^Stagione\s+/i, '')
   return `<div class="amr-card">
-    <div class="amr-head">
-      <div class="amr-ball">🏓</div>
-      <div><div class="amr-title">CLASSIFICA AMATORI</div>
-      <div class="amr-sub">Tornei e partite interne tennistavolo · ${esc(data.season.name)} · aggiornata al ${formatDate(date)}</div></div>
-    </div>
-    <table class="amr-t">
-      <thead><tr><th class="amr-pos">#</th><th></th><th>Giocatore</th><th class="n">Punti</th><th class="n">Var.</th><th class="n">G</th><th class="n">V</th><th class="n">P</th><th class="n">Set</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="amr-foot">
-      <span>${since} · ${valid} partite valide</span>
-      <span>In rosso: meno di ${data.settings.minMatchesPerPair} partite con qualche avversario</span>
-    </div>
+    <header class="amr-head">
+      <div class="amr-top amr-mono"><span>Tornei e partite interne tennistavolo</span><span>Stagione ${esc(season)}</span></div>
+      <h1 class="amr-title">Classifica<br><span>Amatori</span></h1>
+      <div class="amr-date">Aggiornata al ${formatLongDate(date)}${since}</div>
+    </header>
+    <div class="amr-cols amr-mono"><span>#</span><span></span><span class="l">Giocatore</span><span>Punti</span><span>Var.</span><span>Par. (V–P)</span><span>Set (V–P)</span></div>
+    ${rows}
+    <footer class="amr-foot amr-mono">
+      <span>${valid} partite valide${retired.length ? `<br>Ritirati: ${retired.map((s) => esc(s.player.name)).join(', ')}` : ''}</span>
+      <span>In classifica ufficiale chi ha giocato<br>almeno ${data.settings.minMatchesPerPair} partite con ogni avversario</span>
+    </footer>
   </div>`
 }
 
@@ -88,13 +109,14 @@ function fileDate(date: string) {
 }
 
 export async function renderPng(data: AppData, c: Computed, date: string): Promise<string> {
+  await fontsReady()
   const host = document.createElement('div')
-  host.style.cssText = 'position:fixed;left:-10000px;top:0;'
+  host.style.cssText = 'position:fixed;left:-20000px;top:0;'
   host.innerHTML = `<style>${CARD_CSS}</style>${rankingHtml(data, c, date)}`
   document.body.appendChild(host)
   try {
     const node = host.querySelector('.amr-card') as HTMLElement
-    return await toPng(node, { pixelRatio: 2, backgroundColor: '#ffffff' })
+    return await toPng(node, { pixelRatio: 1, backgroundColor: '#F5F2EB', fontEmbedCSS: FONT_FACE_CSS })
   } finally {
     host.remove()
   }
@@ -115,10 +137,12 @@ export async function copyPng(data: AppData, c: Computed, date: string) {
 }
 
 export async function savePdf(data: AppData, c: Computed, date: string) {
+  // La grafica è larga 1080px: nel PDF A4 la si rimpicciolisce per farla stare nella pagina.
   const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-    body{margin:0;display:flex;justify-content:center;background:#fff}
+    ${FONT_FACE_CSS}
+    body{margin:0;background:#F5F2EB}
     ${CARD_CSS}
-    .amr-card{width:100%}
+    .amr-card{zoom:.66;min-height:0}
   </style></head><body>${rankingHtml(data, c, date)}</body></html>`
   return window.api.pdfFromHtml({ html, defaultName: `classifica-amatori-${fileDate(date)}.pdf` })
 }

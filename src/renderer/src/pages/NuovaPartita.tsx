@@ -1,20 +1,25 @@
 import { useMemo, useState } from 'react'
-import { formatDate, todayISO } from '@core/format'
+import { fmtDelta, formatLongDate, todayISO } from '@core/format'
 import { addMatch } from '@core/mutations'
 import { pairKey } from '@core/rules'
 import { previewMatch } from '@core/standings'
 import { useStore } from '../store'
-import { Empty, PageHead } from '../components/ui'
+import { Empty, Meter, PageHead } from '../components/ui'
+import { IconChevron } from '../components/icons'
 import type { Navigate } from '../App'
 
-const SCORES: [number, number][] = [
+const WIN_A: [number, number][] = [
   [3, 0],
   [3, 1],
-  [3, 2],
+  [3, 2]
+]
+const WIN_B: [number, number][] = [
   [2, 3],
   [1, 3],
   [0, 3]
 ]
+
+const ORDINALS = ['prima', 'seconda', 'terza', 'quarta', 'quinta', 'sesta', 'settima', 'ottava']
 
 export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   const { data, computed, update, toast } = useStore()
@@ -23,13 +28,13 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   const [b, setB] = useState('')
   const [score, setScore] = useState<[number, number] | null>(null)
   const [note, setNote] = useState('')
-  const [sessionIds, setSessionIds] = useState<string[]>([])
 
   const players = data.players
     .filter((p) => !p.deleted && p.status === 'active')
     .sort((x, y) => x.name.localeCompare(y.name, 'it'))
   const nameOf = (id: string) => data.players.find((p) => p.id === id)?.name ?? '?'
   const ratingOf = (id: string) => computed.standings.find((s) => s.player.id === id)?.rating ?? data.settings.startRating
+  const { maxMatchesPerPair: max, minMatchesPerPair: min } = data.settings
 
   const preview = useMemo(() => {
     if (!a || !b || a === b || !score) return null
@@ -38,19 +43,15 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
 
   const pairCount = a && b && a !== b ? (computed.pairCounted.get(pairKey(a, b)) ?? 0) : null
   const canSave = a && b && a !== b && score
+  const aWins = !!score && score[0] > score[1]
+  const bWins = !!score && score[1] > score[0]
 
   function save() {
     if (!canSave) return
-    let newId = ''
-    const ok = update((d) => {
-      const r = addMatch(d, { date, playerA: a, playerB: b, setsA: score![0], setsB: score![1], note })
-      newId = r.id
-      return r.data
-    }, 'nuova partita')
+    const ok = update((d) => addMatch(d, { date, playerA: a, playerB: b, setsA: score![0], setsB: score![1], note }).data, 'nuova partita')
     if (!ok) return
-    const winner = score![0] > score![1] ? a : b
-    toast(`Salvata: vince ${nameOf(winner)} ${Math.max(...score!)}-${Math.min(...score!)}`)
-    setSessionIds((s) => [newId, ...s])
+    const winner = aWins ? a : b
+    toast(`Salvata: vince ${nameOf(winner)} ${Math.max(...score!)}–${Math.min(...score!)}`)
     setA('')
     setB('')
     setScore(null)
@@ -71,114 +72,174 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
     )
   }
 
-  const PlayerSelect = ({ value, other, onPick, label, winner }: { value: string; other: string; onPick: (id: string) => void; label: string; winner: boolean }) => (
+  const dayResults = computed.results.filter((r) => r.match.date === date).reverse()
+  const surname = (id: string) => {
+    const n = nameOf(id)
+    const parts = n.split(' ')
+    return parts.length > 1 ? parts.slice(1).join(' ') : n
+  }
+
+  const renderSelect = (value: string, other: string, onPick: (id: string) => void, label: string, winner: boolean) => (
     <label className={`player-select ${winner ? 'winner' : ''}`}>
-      <span className="picker-label">{label}</span>
-      <select value={value} onChange={(e) => onPick(e.target.value)}>
-        <option value="">— Seleziona —</option>
-        {players.map((p) => (
-          <option key={p.id} value={p.id} disabled={p.id === other}>
-            {p.name} ({Math.round(ratingOf(p.id))})
-          </option>
-        ))}
-      </select>
+      <span className="label-row">
+        <span className="label">{label}</span>
+        {winner && <span className="label strong">Vincitore</span>}
+      </span>
+      <span className="select-wrap">
+        <select value={value} onChange={(e) => onPick(e.target.value)}>
+          <option value="">Scegli…</option>
+          {players.map((p) => (
+            <option key={p.id} value={p.id} disabled={p.id === other}>
+              {p.name} · {Math.round(ratingOf(p.id))}
+            </option>
+          ))}
+        </select>
+        <IconChevron />
+      </span>
     </label>
   )
 
+  const scoreGroup = (list: [number, number][], label: string) => (
+    <div className="score-group">
+      <span className="label">{label}</span>
+      <div className="score-grid" role="group" aria-label={label}>
+        {list.map(([x, y]) => {
+          const on = !!score && score[0] === x && score[1] === y
+          return (
+            <button key={`${x}${y}`} className={`score-btn ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setScore([x, y])}>
+              {x}–{y}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   const deltaA = preview?.deltaA ?? 0
-  const sessionResults = sessionIds.map((id) => computed.resultById.get(id)).filter((r) => r != null)
+  const nextIndex = pairCount != null ? pairCount + 1 : 0
 
   return (
-    <>
-      <PageHead
-        title="Nuova partita"
-        subtitle="Seleziona i due giocatori e il risultato in set (al meglio dei 5)."
-        actions={
-          <label className="field-inline">
-            Data
-            <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value || todayISO())} />
+    <div className="entry-layout">
+      <div className="entry-main">
+        <PageHead
+          title="Nuova partita"
+          actions={
+            <label className="field-stack">
+              <span className="label">Data</span>
+              <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value || todayISO())} />
+            </label>
+          }
+        />
+
+        <section className="vs-row">
+          {renderSelect(a, b, setA, 'Giocatore 1', aWins)}
+          <div className="vs">VS</div>
+          {renderSelect(b, a, setB, 'Giocatore 2', bWins)}
+        </section>
+
+        <section className="vs-row">
+          {scoreGroup(WIN_A, 'Vince il giocatore 1')}
+          <div />
+          {scoreGroup(WIN_B, 'Vince il giocatore 2')}
+        </section>
+
+        <section className={`preview-strip ${preview && !preview.eval.counted ? 'warn' : ''}`}>
+          {preview && preview.eval.counted ? (
+            <>
+              <div className="preview-cell">
+                <span className="label">{nameOf(a)}</span>
+                <span className="preview-value">
+                  <b className={deltaA < 0 ? 'neg' : ''}>{fmtDelta(deltaA, 1)}</b>
+                  <span className="mono dim">
+                    {Math.round(preview.ratingA)} → {Math.round(preview.ratingA + deltaA)}
+                  </span>
+                </span>
+              </div>
+              <div className="preview-cell">
+                <span className="label">{nameOf(b)}</span>
+                <span className="preview-value">
+                  <b className={-deltaA < 0 ? 'neg' : ''}>{fmtDelta(-deltaA, 1)}</b>
+                  <span className="mono dim">
+                    {Math.round(preview.ratingB)} → {Math.round(preview.ratingB - deltaA)}
+                  </span>
+                </span>
+              </div>
+            </>
+          ) : preview ? (
+            <div className="preview-cell wide">
+              <span className="label neg">Non conta per la classifica</span>
+              <span>La partita viene registrata ma non assegna punti: {preview.eval.reason?.toLowerCase()}.</span>
+            </div>
+          ) : (
+            <div className="preview-cell wide">
+              <span className="label">Punti in palio</span>
+              <span className="dim">Scegli i due giocatori e il risultato per vedere quanti punti guadagnano o perdono.</span>
+            </div>
+          )}
+          <div className="preview-cell meter-cell">
+            <span className="label-row">
+              <span className="label">Scontri validi tra loro</span>
+              <span className="label strong">{pairCount != null ? `${pairCount} / ${max}` : `— / ${max}`}</span>
+            </span>
+            <Meter value={pairCount ?? 0} max={max} min={min} label={pairCount != null ? `${pairCount} partite valide su ${max}` : 'Nessuna coppia scelta'} />
+            <span className="dim small">
+              {pairCount == null
+                ? `Contano al massimo ${max} partite per coppia.`
+                : nextIndex > max
+                  ? `Hanno già giocato ${max} partite valide: questa non conta.`
+                  : `Questa sarà la ${ORDINALS[nextIndex - 1] ?? `${nextIndex}ª`}: conta per la classifica.`}
+            </span>
+          </div>
+        </section>
+
+        {preview?.eval.counted && date !== todayISO() && (
+          <p className="dim small">Partita in data passata: tutta la classifica verrà ricalcolata da quel giorno.</p>
+        )}
+
+        <div className="save-row">
+          <label className="field-stack grow">
+            <span className="label">Note</span>
+            <input className="note-input" placeholder="Facoltative" value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} />
           </label>
-        }
-      />
-
-      <div className="match-entry">
-        <div className="versus">
-          <div className="vs-selects">
-            <PlayerSelect label="Giocatore 1" value={a} other={b} onPick={setA} winner={!!score && score[0] > score[1]} />
-            <span className="vs">vs</span>
-            <PlayerSelect label="Giocatore 2" value={b} other={a} onPick={setB} winner={!!score && score[1] > score[0]} />
-          </div>
-          <div className="score-grid">
-            {SCORES.map(([x, y]) => (
-              <button
-                key={`${x}${y}`}
-                className={`score-btn ${score && score[0] === x && score[1] === y ? 'selected' : ''} ${x > y ? 'score-a' : 'score-b'}`}
-                onClick={() => setScore([x, y])}
-              >
-                {x} – {y}
-              </button>
-            ))}
-          </div>
-          <input
-            className="note-input"
-            placeholder="Note (facoltative)"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && save()}
-          />
-
-          {pairCount != null && (
-            <div className="muted small center">
-              Partite valide già giocate tra loro: <strong>{pairCount}</strong> / {data.settings.maxMatchesPerPair}
-            </div>
-          )}
-
-          {preview && (
-            <div className={`preview ${preview.eval.counted ? '' : 'preview-warn'}`}>
-              {preview.eval.counted ? (
-                <>
-                  <div>
-                    {nameOf(a)} <strong className={deltaA >= 0 ? 'pos' : 'neg'}>{deltaA >= 0 ? '+' : ''}{deltaA.toFixed(1)}</strong>
-                    <span className="muted"> → {Math.round(preview.ratingA + deltaA)}</span>
-                  </div>
-                  <div>
-                    {nameOf(b)} <strong className={-deltaA >= 0 ? 'pos' : 'neg'}>{-deltaA >= 0 ? '+' : ''}{(-deltaA).toFixed(1)}</strong>
-                    <span className="muted"> → {Math.round(preview.ratingB - deltaA)}</span>
-                  </div>
-                  {date !== todayISO() && <div className="muted small">Partita inserita in data passata: la classifica verrà ricalcolata.</div>}
-                </>
-              ) : (
-                <>⚠️ Questa partita verrà registrata ma <strong>non conterà</strong> per la classifica: {preview.eval.reason}.</>
-              )}
-            </div>
-          )}
-
-          <button className="btn btn-primary btn-lg" disabled={!canSave} onClick={save}>
-            Salva partita
+          <button className="btn btn-red btn-save" disabled={!canSave} onClick={save}>
+            Salva partita <span className="kbd">Invio</span>
           </button>
         </div>
       </div>
 
-      {sessionResults.length > 0 && (
-        <div className="card mt">
-          <h3 className="card-title">Inserite in questa sessione</h3>
-          <table className="table">
+      <aside className="entry-aside">
+        <div className="aside-head">
+          <h2>{date === todayISO() ? 'Stasera' : formatLongDate(date)}</h2>
+          <span className="mono dim small">
+            {dayResults.length} {dayResults.length === 1 ? 'partita' : 'partite'}
+          </span>
+        </div>
+        {dayResults.length === 0 ? (
+          <p className="dim small">Ancora nessuna partita in questa data.</p>
+        ) : (
+          <table className="day-list">
             <tbody>
-              {sessionResults.map((r) => (
-                <tr key={r.match.id}>
-                  <td className="small muted">{formatDate(r.match.date)}</td>
-                  <td className={r.match.setsA > r.match.setsB ? 'winner' : ''}>{nameOf(r.match.playerA)}</td>
-                  <td className="num">
-                    {r.match.setsA}-{r.match.setsB}
-                  </td>
-                  <td className={r.match.setsB > r.match.setsA ? 'winner' : ''}>{nameOf(r.match.playerB)}</td>
-                  <td className="num small">{r.eval.counted ? `±${Math.abs(r.deltaA).toFixed(1)}` : <span className="chip chip-bad">non conta</span>}</td>
-                </tr>
-              ))}
+              {dayResults.map((r) => {
+                const m = r.match
+                const aw = m.setsA > m.setsB
+                return (
+                  <tr key={m.id} className={r.eval.counted ? '' : 'excluded'}>
+                    <td className={aw ? 'strong' : 'dim'}>{surname(m.playerA)}</td>
+                    <td className="day-score">
+                      {m.setsA}–{m.setsB}
+                    </td>
+                    <td className={!aw ? 'strong' : 'dim'}>{surname(m.playerB)}</td>
+                    <td className="mono small right">{r.eval.counted ? `±${Math.abs(r.deltaA).toFixed(1).replace('.', ',')}` : <span className="neg">non conta</span>}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
-        </div>
-      )}
-    </>
+        )}
+        {dayResults.some((r) => r.eval.kind === 'cap') && (
+          <p className="dim small">Le partite oltre le {max} valide per coppia restano registrate ma non assegnano punti.</p>
+        )}
+      </aside>
+    </div>
   )
 }

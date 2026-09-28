@@ -71,23 +71,18 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
     )
   }
 
-  const PlayerPicker = ({ value, other, onPick, label }: { value: string; other: string; onPick: (id: string) => void; label: string }) => (
-    <div className="picker">
-      <div className="picker-label">{label}</div>
-      <div className="picker-grid">
+  const PlayerSelect = ({ value, other, onPick, label, winner }: { value: string; other: string; onPick: (id: string) => void; label: string; winner: boolean }) => (
+    <label className={`player-select ${winner ? 'winner' : ''}`}>
+      <span className="picker-label">{label}</span>
+      <select value={value} onChange={(e) => onPick(e.target.value)}>
+        <option value="">— Seleziona —</option>
         {players.map((p) => (
-          <button
-            key={p.id}
-            className={`pick ${value === p.id ? 'selected' : ''}`}
-            disabled={p.id === other}
-            onClick={() => onPick(value === p.id ? '' : p.id)}
-          >
-            <span>{p.name}</span>
-            <small>{Math.round(ratingOf(p.id))}</small>
-          </button>
+          <option key={p.id} value={p.id} disabled={p.id === other}>
+            {p.name} ({Math.round(ratingOf(p.id))})
+          </option>
         ))}
-      </div>
-    </div>
+      </select>
+    </label>
   )
 
   const deltaA = preview?.deltaA ?? 0
@@ -107,12 +102,11 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
       />
 
       <div className="match-entry">
-        <PlayerPicker label="Giocatore 1" value={a} other={b} onPick={setA} />
         <div className="versus">
-          <div className="vs-names">
-            <span className={score && score[0] > score[1] ? 'winner' : ''}>{a ? nameOf(a) : '—'}</span>
+          <div className="vs-selects">
+            <PlayerSelect label="Giocatore 1" value={a} other={b} onPick={setA} winner={!!score && score[0] > score[1]} />
             <span className="vs">vs</span>
-            <span className={score && score[1] > score[0] ? 'winner' : ''}>{b ? nameOf(b) : '—'}</span>
+            <PlayerSelect label="Giocatore 2" value={b} other={a} onPick={setB} winner={!!score && score[1] > score[0]} />
           </div>
           <div className="score-grid">
             {SCORES.map(([x, y]) => (
@@ -163,7 +157,6 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
             Salva partita
           </button>
         </div>
-        <PlayerPicker label="Giocatore 2" value={b} other={a} onPick={setB} />
       </div>
 
       {sessionResults.length > 0 && (

@@ -101,14 +101,19 @@ app.on('browser-window-created', (_e, win) => {
       for (const [name, idx] of pages) {
         await js(`[...document.querySelectorAll('.nav-item')][${idx - 1}].click()`)
         await wait(400)
+        console.log('PAGE', name, await js(`document.querySelector('h1')?.innerText`))
         await shot(name)
       }
       // Nuova partita con anteprima
       await js(`[...document.querySelectorAll('.nav-item')][1].click()`)
       await wait(200)
-      await js(`const g=document.querySelectorAll('.picker');g[0].querySelectorAll('.pick')[0].click();`)
+      // Imposta i menu a tendina come farebbe l'utente (React ascolta l'evento "change").
+      const pick = (i, optIndex) =>
+        js(`(() => { const s = document.querySelectorAll('.player-select select')[${i}];
+          s.value = s.options[${optIndex}].value; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+      await pick(0, 1)
       await wait(100)
-      await js(`document.querySelectorAll('.picker')[1].querySelectorAll('.pick')[3].click();`)
+      await pick(1, 4)
       await wait(100)
       await js(`document.querySelectorAll('.score-btn')[4].click()`)
       await wait(300)

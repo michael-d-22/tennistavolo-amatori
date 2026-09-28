@@ -558,17 +558,31 @@ tr.excluded .btn.danger {
 
 /* Nuova partita */
 .match-entry {
-  display: grid;
-  grid-template-columns: 1fr 340px 1fr;
-  gap: 18px;
-  align-items: start;
+  max-width: 620px;
 }
-.picker {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  box-shadow: var(--shadow);
+.vs-selects {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: end;
+  gap: 10px;
+}
+.vs-selects .vs {
+  padding-bottom: 10px;
+}
+.player-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.player-select select {
+  width: 100%;
+  padding: 10px;
+  font-size: 15px;
+}
+.player-select.winner select {
+  border-color: var(--pos);
+  color: var(--pos);
+  font-weight: 700;
 }
 .picker-label {
   font-weight: 600;
@@ -577,43 +591,6 @@ tr.excluded .btn.danger {
   text-transform: uppercase;
   font-size: 12px;
   letter-spacing: 0.05em;
-}
-.picker-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 6px;
-}
-.pick {
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-}
-.pick span {
-  font-weight: 600;
-}
-.pick small {
-  color: var(--muted);
-}
-.pick:hover:not(:disabled) {
-  border-color: var(--primary-2);
-}
-.pick.selected {
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-}
-.pick.selected small {
-  color: #c7d2fe;
-}
-.pick:disabled {
-  opacity: 0.3;
-  cursor: default;
 }
 .versus {
   background: var(--surface);
@@ -624,20 +601,6 @@ tr.excluded .btn.danger {
   flex-direction: column;
   gap: 14px;
   box-shadow: var(--shadow);
-  position: sticky;
-  top: 0;
-}
-.vs-names {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 8px;
-  font-size: 17px;
-  text-align: center;
-  min-height: 48px;
-}
-.vs-names .winner {
-  color: var(--pos);
 }
 .vs {
   color: var(--muted);
@@ -1002,14 +965,6 @@ tr.excluded .btn.danger {
 }
 
 @media (max-width: 1150px) {
-  .match-entry {
-    grid-template-columns: 1fr 1fr;
-  }
-  .versus {
-    grid-column: span 2;
-    order: 3;
-    position: static;
-  }
   .publish-layout,
   .settings-grid {
     grid-template-columns: 1fr;

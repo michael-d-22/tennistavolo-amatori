@@ -1,64 +1,133 @@
-# Amatori – classifica Elo interna
+<p align="center">
+  <img src="build/icon.png" width="96" alt="Icona Amatori">
+</p>
 
-App desktop per Windows che gestisce la classifica interna del gruppo AMATORI (tennistavolo):
-partite al meglio dei 5 set, sistema Elo K 32 con partenza a 1200 punti.
+<h1 align="center">Amatori</h1>
 
-## Regolamento applicato
+<p align="center">
+  Classifica Elo interna per il gruppo di tennistavolo <strong>AMATORI</strong>.<br>
+  App desktop per Windows · Electron + React + TypeScript
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/classifica.png" width="820" alt="Schermata classifica">
+</p>
+
+---
+
+## Cos'è
+
+Durante la stagione i componenti del gruppo si sfidano a fine allenamento in partite ufficiali al meglio dei
+5 set, senza un calendario fisso: chi c'è sfida chi c'è. L'app registra i risultati, calcola i punti con il
+sistema **Elo** e applica automaticamente il regolamento della stagione, così che il responsabile debba solo
+inserire le partite e pubblicare la classifica ogni due settimane nel gruppo WhatsApp.
+
+## Funzionalità
+
+- **Inserimento rapido delle partite**: due clic per i giocatori, uno per il risultato (3-0, 3-1, 3-2…).
+  Prima di salvare mostra quanti punti guadagna e perde ciascuno e avvisa se la partita non conterà.
+- **Classifica** con punti, variazione e ▲▼ di posizione rispetto all'ultima pubblicazione, vittorie,
+  sconfitte, set, forma recente e stato di qualificazione.
+- **Scontri diretti**: tabella di chi ha giocato con chi, con evidenziate le coppie che non hanno ancora
+  raggiunto il minimo richiesto o che hanno già esaurito le partite valide.
+- **Scheda giocatore** con grafico dell'andamento dei punti e bilancio contro ogni avversario.
+- **Pubblicazione**: immagine o testo pronti da incollare su WhatsApp, oppure PNG, PDF, Excel e CSV.
+- **Partite escluse, mai cancellate**: restano visibili barrate con il motivo e si possono includere o
+  escludere a mano.
+- **Backup automatici**, ripristino con un clic, **Ctrl+Z** per annullare l'ultima modifica.
+- **Esporta e importa i dati** (file `.amat`) per spostarli su un altro PC o, in futuro, su Android.
+
+| Nuova partita | Scontri diretti |
+| --- | --- |
+| ![Nuova partita](docs/screenshots/nuova-anteprima.png) | ![Scontri diretti](docs/screenshots/matrice.png) |
+
+| Scheda giocatore | Pubblicazione |
+| --- | --- |
+| ![Scheda giocatore](docs/screenshots/giocatore.png) | ![Pubblicazione](docs/screenshots/pubblica.png) |
+
+Esempio di immagine esportata per il gruppo:
+
+<p align="center"><img src="docs/screenshots/export-classifica.png" width="560" alt="Classifica esportata"></p>
+
+## Regolamento applicato (stagione 2026-2027)
 
 | Regola | Come la applica l'app |
 | --- | --- |
-| Partenza 1200, anche per chi entra a stagione in corso | Ogni giocatore parte da `startRating` alla data di ingresso |
-| Elo K 32 | `E = 1 / (1 + 10^((Rb − Ra)/400))`, variazione `32 · (risultato − E)` |
-| Massimo 8 partite con lo stesso avversario | Dalla 9ª in poi la partita è registrata ma **non conta** (segnata “oltre limite”) |
-| Soglia: almeno 2 partite con ciascun avversario | Chi non la raggiunge resta visibile in rosso come “fuori classifica” |
-| Regola abbandoni | Quando un giocatore viene segnato “ritirato”, con ogni avversario affrontato contano solo le prime N partite (N = minimo comune); le altre vengono escluse, **non cancellate** |
-| Decisioni manuali | Ogni partita si può forzare “includi” o “escludi” con un motivo |
-| Pubblicazione ogni 2 settimane | La pagina Pubblica esporta la classifica e la “congela” per calcolare frecce e variazioni |
+| Tutti partono da **1200 punti**, anche chi entra a stagione in corso | Ogni giocatore parte da 1200 alla sua data di ingresso |
+| Sistema **Elo con K = 32** | Probabilità attesa `E = 1 / (1 + 10^((Rb − Ra) / 400))`, variazione `32 × (risultato − E)`. Chi batte un avversario più forte guadagna di più |
+| Al massimo **8 partite** con lo stesso avversario | Dalla 9ª in poi la partita viene registrata ma non conta (“oltre limite”) |
+| Per la classifica ufficiale servono almeno **2 partite con ciascun avversario** | Chi non raggiunge la soglia resta visibile in rosso come “fuori classifica”, con l'elenco delle partite che mancano |
+| **Abbandoni**: di chi sparisce contano solo le partite fino al minimo comune | Segnando un giocatore come ritirato, con ogni avversario affrontato restano valide solo le prime N partite (N = il numero minimo giocato con un avversario); le altre vengono escluse e i punti di tutti ricalcolati |
+| Casi particolari | Ogni partita può essere forzata a mano come inclusa o esclusa, con un motivo |
+| Pubblicazione **ogni 2 settimane** | Un promemoria segnala quando è ora; “Segna pubblicata” fissa il riferimento per le variazioni successive |
 
-La classifica viene sempre ricalcolata da zero ripercorrendo le partite in ordine di data, quindi
-correggere o eliminare una partita vecchia aggiorna tutto in modo coerente.
-Tutti i parametri si possono cambiare da **Impostazioni**.
+La classifica viene sempre **ricalcolata da zero** ripercorrendo le partite in ordine di data: correggere o
+eliminare una partita vecchia, o riattivare un giocatore ritirato, aggiorna tutto in modo coerente.
+Tutti i numeri (punti di partenza, K, limite e soglia, giorni tra le pubblicazioni) si cambiano da
+**Impostazioni**.
 
-## Uso
+## Installazione
 
-- **Nuova partita**: clic sui due giocatori, clic sul risultato (3-0, 3-1, 3-2…), Salva. Prima di salvare mostra
-  quanti punti si guadagnano/perdono e avvisa se la partita non conterà.
-- **Scontri diretti**: tabella di chi ha giocato con chi; le caselle rosse sono le coppie che non hanno ancora
-  raggiunto la soglia minima.
-- **Pubblica**: copia l'immagine o il testo per WhatsApp, oppure salva PNG, PDF, Excel, CSV. Poi “Segna pubblicata”.
-- **Ctrl+Z** annulla l'ultima modifica, **Ctrl+1…7** cambia pagina.
+Dalla pagina delle release, oppure compilando il progetto (vedi sotto), si ottengono due file:
 
-## Dati e backup
+- `Amatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
+- `Amatori-Portable-x.y.z.exe`: si avvia senza installare nulla.
 
-- I dati stanno in `%APPDATA%\Amatori\data.json` (un unico file JSON).
-- Backup automatici in `%APPDATA%\Amatori\backup` (ultime 30 copie), ripristinabili da Impostazioni.
-- **Esporta tutti i dati** produce un file `.amat`; **Importa** lo unisce ai dati presenti (per ogni elemento vince
-  la modifica più recente, le eliminazioni si propagano). È il meccanismo pensato per sincronizzare con una futura
-  app Android.
-- La variabile d'ambiente `AMATORI_DATA_DIR` permette di usare un'altra cartella dati.
+L'eseguibile non è firmato digitalmente: al primo avvio Windows potrebbe mostrare l'avviso
+“PC protetto da Windows”. Cliccare **Ulteriori informazioni → Esegui comunque**.
+
+## Dove sono i dati
+
+| Cosa | Percorso |
+| --- | --- |
+| Dati | `%APPDATA%\Amatori\data.json` |
+| Backup automatici (ultime 30 copie) | `%APPDATA%\Amatori\backup\` |
+
+Il file dati è un unico JSON leggibile. Per usare un'altra cartella (es. su chiavetta) impostare la variabile
+d'ambiente `AMATORI_DATA_DIR`.
+
+**Sincronizzazione**: “Esporta tutti i dati” crea un file `.amat`; “Importa” lo **unisce** ai dati presenti.
+Per ogni giocatore, partita o pubblicazione vince la versione modificata più di recente, le eliminazioni si
+propagano e niente viene duplicato.
 
 ## Sviluppo
 
+Requisiti: Node.js 22 o superiore.
+
 ```bash
 npm install
-npm run dev          # avvia l'app in sviluppo
-npm test             # test del motore di calcolo
-npm run typecheck
-npm run screenshots  # avvia l'app con dati finti e salva screenshot + export in ./snaps
-npm run build:win    # crea dist/Amatori-Setup-x.y.z.exe e dist/Amatori-Portable-x.y.z.exe
+npm run dev          # avvia l'app in modalità sviluppo
+npm test             # test del motore di calcolo (Vitest)
+npm run typecheck    # controllo dei tipi TypeScript
+npm run screenshots  # avvia l'app con dati di prova e salva screenshot ed export in ./snaps
+npm run icon         # rigenera build/icon.png
+npm run build:win    # crea installer e versione portable in ./dist
 ```
 
-Struttura:
+### Struttura
 
-- `src/core/` – modello dati, Elo, regole, classifica, export testuali, sync. TypeScript puro senza
-  dipendenze: è la parte da riusare per la versione Android (es. con Capacitor).
-- `src/main/` – processo Electron: salvataggio file, backup, dialoghi, PDF, Excel.
-- `src/preload/` – API esposta all'interfaccia.
-- `src/renderer/` – interfaccia React.
-- `tests/` – test Vitest.
+```
+src/
+  core/        logica pura in TypeScript, senza dipendenze
+    types.ts       modello dati
+    elo.ts         formula Elo
+    rules.ts       limite per coppia, regola abbandoni, esclusioni manuali
+    standings.ts   ricalcolo cronologico, statistiche, qualificazione
+    mutations.ts   operazioni sui dati
+    format.ts      testo WhatsApp e CSV
+    sync.ts        formato .amat e unione dei dati
+  main/        processo Electron: file, backup, dialoghi, PDF, Excel
+  preload/     API esposta all'interfaccia
+  renderer/    interfaccia React (pagine, componenti, export PNG/PDF)
+tests/         test del motore di calcolo
+scripts/       screenshot automatici e generazione icona
+```
 
 ## Verso Android
 
-L'interfaccia è una normale app web React e la logica è in `src/core`, quindi la strada più breve è
-impacchettare lo stesso renderer con Capacitor, sostituendo `window.api` (oggi implementata da Electron)
-con un'implementazione basata sul filesystem di Capacitor. Lo scambio dati avviene con il file `.amat`.
+L'app è predisposta per una futura versione Android:
+
+- tutta la logica di calcolo è in `src/core`, riusabile così com'è;
+- l'interfaccia è una normale app web React, impacchettabile con **Capacitor** sostituendo `window.api`
+  (oggi fornita da Electron) con un'implementazione basata sul filesystem del telefono;
+- lo scambio dati fra desktop e telefono avviene con il file `.amat`, senza bisogno di server.

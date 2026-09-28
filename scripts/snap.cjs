@@ -125,6 +125,7 @@ app.on('browser-window-created', (_e, win) => {
       for (const label of ['Salva PNG', 'Salva PDF', 'Excel', 'CSV classifica', 'CSV partite']) {
         await js(`[...document.querySelectorAll('.export-grid button')].find(b=>b.textContent.includes('${label}')).click()`)
         await wait(2500)
+        console.log('EXPORT', label, await js(`document.querySelector('.toasts')?.innerText + ' | ' + document.querySelector('h1')?.innerText`))
       }
       const errs = await js(`document.body.innerText.length`)
       console.log('SNAP_OK', outDir, errs)

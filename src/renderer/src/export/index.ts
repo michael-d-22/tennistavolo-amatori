@@ -117,7 +117,9 @@ export async function renderPng(data: AppData, c: Computed, date: string): Promi
   document.body.appendChild(host)
   try {
     const node = host.querySelector('.amr-card') as HTMLElement
-    return await toPng(node, { pixelRatio: 1, backgroundColor: '#F5F2EB', fontEmbedCSS: FONT_FACE_CSS })
+    // Doppia risoluzione (2160px di larghezza): WhatsApp ricomprime le immagini, partire più nitidi
+    // mantiene leggibili i numeri piccoli anche dopo la compressione.
+    return await toPng(node, { pixelRatio: 2, backgroundColor: '#F5F2EB', fontEmbedCSS: FONT_FACE_CSS })
   } finally {
     host.remove()
   }

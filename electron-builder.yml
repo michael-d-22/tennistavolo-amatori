@@ -1,0 +1,22 @@
+appId: it.amatori.classifica
+productName: Amatori
+directories:
+  buildResources: build
+  output: dist
+files:
+  - out/**
+  - package.json
+win:
+  icon: build/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Amatori
+  artifactName: Amatori-Setup-${version}.exe
+portable:
+  artifactName: Amatori-Portable-${version}.exe

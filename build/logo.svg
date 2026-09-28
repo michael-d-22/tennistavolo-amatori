@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <!-- Racchetta da tennistavolo con pallina. I colori #131a45 (blu) e #c8231a (rosso) vengono
+       sostituiti da scripts/make-icon.cjs per la versione del tema scuro. -->
+  <g transform="translate(330 318) rotate(38)">
+    <!-- manico -->
+    <path d="M -34 92 L 34 92 L 40 250 Q 40 278 12 278 L -12 278 Q -40 278 -40 250 Z" fill="#131a45"/>
+    <path d="M -14 120 L -16 256 M 14 120 L 16 256" stroke="#ffffff" stroke-opacity="0.18" stroke-width="6" stroke-linecap="round"/>
+    <!-- collo -->
+    <path d="M -58 70 Q 0 118 58 70 L 34 104 L -34 104 Z" fill="#131a45"/>
+    <!-- pala: bordo blu e gomma rossa -->
+    <ellipse cx="0" cy="-62" rx="168" ry="178" fill="#131a45"/>
+    <ellipse cx="0" cy="-62" rx="154" ry="164" fill="#c8231a"/>
+    <ellipse cx="-50" cy="-110" rx="70" ry="44" fill="#ffffff" fill-opacity="0.10" transform="rotate(-50 -50 -110)"/>
+  </g>
+  <!-- pallina -->
+  <circle cx="118" cy="128" r="52" fill="#ffffff" stroke="#131a45" stroke-width="12"/>
+</svg>

@@ -1,0 +1,103 @@
+import type { Computed, Standing } from './standings'
+import type { AppData } from './types'
+
+export function formatDate(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return `${d}/${m}/${y}`
+}
+
+export function todayISO(now = new Date()): string {
+  const off = now.getTimezoneOffset() * 60000
+  return new Date(now.getTime() - off).toISOString().slice(0, 10)
+}
+
+export function daysBetween(a: string, b: string): number {
+  return Math.round((Date.parse(b.slice(0, 10)) - Date.parse(a.slice(0, 10))) / 86400000)
+}
+
+export function signed(n: number, digits = 0): string {
+  const v = n.toFixed(digits)
+  return n > 0 ? `+${v}` : v
+}
+
+const MEDALS = ['🥇', '🥈', '🥉']
+
+function arrow(s: Standing): string {
+  if (s.positionChange == null) return '🆕'
+  if (s.positionChange > 0) return `⬆️${s.positionChange}`
+  if (s.positionChange < 0) return `⬇️${-s.positionChange}`
+  return '➖'
+}
+
+/** Testo pronto da incollare nel gruppo WhatsApp. */
+export function whatsappText(data: AppData, c: Computed, date: string): string {
+  const lines: string[] = []
+  lines.push(`🏓 *CLASSIFICA AMATORI* 🏓`)
+  lines.push(`_${data.season.name} – aggiornata al ${formatDate(date)}_`)
+  lines.push('')
+  const active = c.standings.filter((s) => s.player.status === 'active')
+  for (const s of active) {
+    const pos = s.position!
+    const medal = pos <= 3 ? MEDALS[pos - 1] : `${pos}.`
+    const delta = s.deltaSincePublish != null && Math.round(s.deltaSincePublish) !== 0 ? ` (${signed(Math.round(s.deltaSincePublish))})` : ''
+    const mark = s.qualified ? '' : ' 🔴'
+    lines.push(`${medal} *${s.player.name}* – ${Math.round(s.rating)} pt${delta} ${arrow(s)} · ${s.wins}V ${s.losses}P${mark}`)
+  }
+  if (active.some((s) => !s.qualified)) {
+    lines.push('')
+    lines.push(`🔴 = non ancora in classifica ufficiale (servono almeno ${data.settings.minMatchesPerPair} partite con ciascun avversario)`)
+  }
+  const retired = c.standings.filter((s) => s.player.status === 'retired')
+  if (retired.length) {
+    lines.push('')
+    lines.push(`Ritirati: ${retired.map((s) => s.player.name).join(', ')}`)
+  }
+  const played = c.results.filter((r) => r.eval.counted).length
+  lines.push('')
+  lines.push(`Partite valide giocate: ${played}`)
+  return lines.join('\n')
+}
+
+function csvCell(v: string | number): string {
+  const s = String(v)
+  return /[";\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+/** CSV con separatore ";" (Excel italiano lo apre correttamente). */
+export function standingsCsv(c: Computed): string {
+  const head = ['Pos', 'Giocatore', 'Punti', 'Variazione', 'Giocate', 'Vinte', 'Perse', 'Set vinti', 'Set persi', 'Qualificato', 'Stato']
+  const rows = c.standings.map((s) => [
+    s.position ?? '',
+    s.player.name,
+    Math.round(s.rating),
+    s.deltaSincePublish != null ? Math.round(s.deltaSincePublish) : '',
+    s.played,
+    s.wins,
+    s.losses,
+    s.setsWon,
+    s.setsLost,
+    s.qualified ? 'Sì' : 'No',
+    s.player.status === 'retired' ? 'Ritirato' : 'Attivo'
+  ])
+  return '﻿' + [head, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n')
+}
+
+export function matchesCsv(data: AppData, c: Computed): string {
+  const name = new Map(data.players.map((p) => [p.id, p.name]))
+  const head = ['Data', 'Giocatore A', 'Giocatore B', 'Risultato', 'Vincitore', 'Punti A', 'Punti B', 'Valida', 'Motivo esclusione']
+  const rows = c.results.map((r) => {
+    const m = r.match
+    return [
+      formatDate(m.date),
+      name.get(m.playerA) ?? '',
+      name.get(m.playerB) ?? '',
+      `${m.setsA}-${m.setsB}`,
+      name.get(m.setsA > m.setsB ? m.playerA : m.playerB) ?? '',
+      r.eval.counted ? r.deltaA.toFixed(1).replace('.', ',') : '',
+      r.eval.counted ? (-r.deltaA).toFixed(1).replace('.', ',') : '',
+      r.eval.counted ? 'Sì' : 'No',
+      r.eval.reason ?? ''
+    ]
+  })
+  return '﻿' + [head, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n')
+}

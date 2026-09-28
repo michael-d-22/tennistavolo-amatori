@@ -10,6 +10,7 @@ import {
   IconPlayers,
   IconPlus,
   IconPublish,
+  IconRedo,
   IconRanking,
   IconSettings,
   IconSun,
@@ -60,7 +61,7 @@ const NAV: { page: Page; label: string; icon: ReactNode; key: string }[] = [
 ]
 
 export function App() {
-  const { data, computed, undo, undoLabel, isNew } = useStore()
+  const { data, computed, undo, redo, undoLabel, redoLabel, isNew } = useStore()
   const theme = useTheme()
   const [route, setRoute] = useState<Route>({ page: 'classifica' })
   const navigate: Navigate = (r) => {
@@ -70,11 +71,16 @@ export function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      const k = e.key.toLowerCase()
+      const isUndo = e.ctrlKey && !e.shiftKey && k === 'z'
+      const isRedo = e.ctrlKey && (k === 'y' || (e.shiftKey && k === 'z'))
+      if (isUndo || isRedo) {
+        // Nei campi di testo Ctrl+Z/Ctrl+Y restano quelli del campo.
         const t = e.target as HTMLElement
         if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA') return
         e.preventDefault()
-        undo()
+        if (isUndo) undo()
+        else redo()
       }
       if (e.ctrlKey && SHORTCUTS[e.key]) {
         e.preventDefault()
@@ -83,7 +89,7 @@ export function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [undo])
+  }, [undo, redo])
 
   const last = computed.lastSnapshot
   const daysSince = last ? daysBetween(last.date, todayISO()) : null
@@ -180,16 +186,31 @@ export function App() {
             {theme.resolved === 'dark' ? <IconSun /> : <IconMoon />}
             {theme.resolved === 'dark' ? 'Tema chiaro' : 'Tema scuro'}
           </button>
-          {/* Una pubblicazione si toglie solo da Pubblica → Elimina, non con il pulsante Annulla. */}
-          {undoLabel && undoLabel !== 'pubblicazione' && (
-            <button className="sidebar-btn undo" onClick={undo} title="Ctrl+Z">
-              <IconUndo />
-              <span>Annulla {undoLabel}</span>
-            </button>
-          )}
         </div>
       </aside>
-      <main className="content">{body}</main>
+      <main className="content">
+        <div className="history-bar" role="toolbar" aria-label="Annulla e ripeti">
+          <button
+            className="icon-btn"
+            onClick={undo}
+            disabled={!undoLabel}
+            aria-label={undoLabel ? `Annulla ${undoLabel}` : 'Niente da annullare'}
+            title={undoLabel ? `Annulla ${undoLabel} (Ctrl+Z)` : 'Niente da annullare (Ctrl+Z)'}
+          >
+            <IconUndo />
+          </button>
+          <button
+            className="icon-btn"
+            onClick={redo}
+            disabled={!redoLabel}
+            aria-label={redoLabel ? `Ripeti ${redoLabel}` : 'Niente da ripetere'}
+            title={redoLabel ? `Ripeti ${redoLabel} (Ctrl+Y)` : 'Niente da ripetere (Ctrl+Y)'}
+          >
+            <IconRedo />
+          </button>
+        </div>
+        {body}
+      </main>
     </div>
   )
 }

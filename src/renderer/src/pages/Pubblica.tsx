@@ -158,7 +158,7 @@ export function PubblicaPage() {
           title="Segnare la classifica come pubblicata?"
           message={<p>La classifica attuale verrà salvata con data {formatLongDate(date)} e diventerà il riferimento per le prossime variazioni.</p>}
           confirmLabel="Segna pubblicata"
-          onConfirm={() => update((d) => publishSnapshot(d, computed, date), 'pubblicazione') && toast('Classifica segnata come pubblicata')}
+          onConfirm={() => update((d) => publishSnapshot(d, computed, date), 'pubblicazione', { history: false }) && toast('Classifica segnata come pubblicata')}
           onClose={() => setConfirmPublish(false)}
         />
       )}
@@ -168,7 +168,7 @@ export function PubblicaPage() {
           message={<p>Le variazioni verranno calcolate rispetto alla pubblicazione precedente.</p>}
           confirmLabel="Elimina"
           danger
-          onConfirm={() => update((d) => deleteSnapshot(d, deleting), 'eliminazione pubblicazione')}
+          onConfirm={() => update((d) => deleteSnapshot(d, deleting), 'eliminazione pubblicazione', { history: false })}
           onClose={() => setDeleting(null)}
         />
       )}

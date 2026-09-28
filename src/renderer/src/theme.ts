@@ -61,3 +61,47 @@ export function useTheme(): { pref: ThemePref; resolved: 'dark' | 'light' } {
   )
   return { pref: p, resolved: resolved(p) }
 }
+
+// Dimensione dell'interfaccia (moltiplica lo zoom automatico deciso in base alla finestra).
+
+export type UiSize = 'small' | 'normal' | 'large'
+export const UI_SIZES: Record<UiSize, number> = { small: 0.88, normal: 1, large: 1.15 }
+const SIZE_KEY = 'amatori-ui-size'
+const sizeListeners = new Set<() => void>()
+
+function readSize(): UiSize {
+  try {
+    const v = localStorage.getItem(SIZE_KEY)
+    if (v === 'small' || v === 'normal' || v === 'large') return v
+  } catch {
+    // predefinito
+  }
+  return 'normal'
+}
+
+let size = readSize()
+
+export function initUiSize() {
+  window.api?.setUiScale(UI_SIZES[size])
+}
+
+export function setUiSize(s: UiSize) {
+  size = s
+  try {
+    localStorage.setItem(SIZE_KEY, s)
+  } catch {
+    // vale comunque per questa sessione
+  }
+  window.api?.setUiScale(UI_SIZES[s])
+  sizeListeners.forEach((l) => l())
+}
+
+export function useUiSize(): UiSize {
+  return useSyncExternalStore(
+    (cb) => {
+      sizeListeners.add(cb)
+      return () => sizeListeners.delete(cb)
+    },
+    () => size
+  )
+}

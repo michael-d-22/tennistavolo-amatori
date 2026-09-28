@@ -25,6 +25,7 @@ const api = {
   copyText:(text: string): Promise<void> => ipcRenderer.invoke('clipboard:text', text),
   copyImage: (dataUrl: string): Promise<void> => ipcRenderer.invoke('clipboard:image', dataUrl),
   showItemInFolder: (path: string): Promise<void> => ipcRenderer.invoke('shell:showItem', path),
+  setUiScale: (scale: number): Promise<void> => ipcRenderer.invoke('ui:scale', scale),
   setNativeTheme: (theme: 'dark' | 'light' | 'system'): Promise<void> => ipcRenderer.invoke('theme:set', theme),
   appInfo:(): Promise<{ version: string; dataDir: string }> => ipcRenderer.invoke('app:info')
 }

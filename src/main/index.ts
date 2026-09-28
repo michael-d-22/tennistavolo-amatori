@@ -49,6 +49,7 @@ async function rotateBackups() {
 }
 
 let lastBackupAt = 0
+let uiScale = 1
 
 async function saveData(json: string) {
   await fs.mkdir(backupDir(), { recursive: true })
@@ -193,16 +194,20 @@ function createWindow() {
 
   registerIpc(win)
 
-  // L'interfaccia è disegnata per circa 1400×880: su finestre più grandi (schermo intero, monitor grandi)
-  // si ingrandisce tutta in proporzione invece di lasciare testi piccoli e spazi vuoti.
+  // L'interfaccia segue la grandezza della finestra: su schermo intero o monitor grandi cresce in proporzione,
+  // su finestre piccole si riduce un po'. uiScale è la preferenza "Dimensione" scelta in Impostazioni.
   const fitZoom = () => {
     if (win.isDestroyed()) return
     const [w, h] = win.getContentSize()
-    const factor = Math.min(1.6, Math.max(1, Math.min(w / 1400, h / 880)))
-    win.webContents.setZoomFactor(Math.round(factor * 100) / 100)
+    const auto = Math.min(1.25, Math.max(0.85, Math.min(w / 2000, h / 1260)))
+    win.webContents.setZoomFactor(Math.round(auto * uiScale * 100) / 100)
   }
   win.on('resize', fitZoom)
   win.webContents.on('did-finish-load', fitZoom)
+  ipcMain.handle('ui:scale', (_e, scale: number) => {
+    uiScale = Math.min(1.5, Math.max(0.6, Number(scale) || 1))
+    fitZoom()
+  })
 
   if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])

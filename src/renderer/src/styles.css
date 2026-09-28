@@ -355,6 +355,33 @@ input[type='checkbox'] {
   padding: 40px 56px 56px;
 }
 
+/* Annulla / Ripeti, sempre in alto a destra */
+.history-bar {
+  position: fixed;
+  top: 12px;
+  right: 28px;
+  z-index: 20;
+  display: flex;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--ground);
+  overflow: hidden;
+}
+.field-stack .seg {
+  align-self: flex-start;
+}
+.history-bar .icon-btn {
+  border-radius: 0;
+}
+.history-bar .icon-btn + .icon-btn {
+  border-left: 1px solid var(--rule-strong);
+}
+.history-bar .icon-btn:disabled {
+  opacity: 0.35;
+  background: none;
+  cursor: default;
+}
+
 /* ---------- Titoli di pagina e sezioni ---------- */
 .page-head {
   display: flex;
@@ -787,8 +814,14 @@ tr.excluded .btn.danger {
   color: var(--red-ink);
 }
 .standings .move-cell {
-  width: 52px;
+  width: 64px;
   font-size: 13px;
+  white-space: nowrap;
+}
+.standings .move-cell .faint {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 .standings .name-link {
   font-size: 16px;
@@ -943,7 +976,7 @@ tr.excluded .btn.danger {
   margin-bottom: 0;
 }
 .entry-aside {
-  padding: 40px 28px;
+  padding: 72px 28px 40px;
   border-left: 1px solid var(--rule);
   background: var(--rail);
   display: flex;

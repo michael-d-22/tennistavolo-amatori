@@ -4,12 +4,13 @@ import { updateMeta } from '@core/mutations'
 import { mergeData, parseDataFile, toExportFile, type MergeReport } from '@core/sync'
 import type { AppData, Season, Settings } from '@core/types'
 import { useStore } from '../store'
-import { setTheme, useTheme, type ThemePref } from '../theme'
+import { setTheme, setUiSize, useTheme, useUiSize, type ThemePref, type UiSize } from '../theme'
 import { Confirm, Modal, PageHead } from '../components/ui'
 
 export function ImpostazioniPage() {
   const { data, update, replaceAll, toast } = useStore()
   const theme = useTheme()
+  const uiSize = useUiSize()
   const [season, setSeason] = useState<Season>(data.season)
   const [settings, setSettings] = useState<Settings>(data.settings)
   const [backups, setBackups] = useState<{ name: string; size: number }[]>([])
@@ -135,7 +136,26 @@ export function ImpostazioniPage() {
                 </button>
               ))}
             </div>
-            <p className="muted small">Vale solo per questo PC. Le immagini e i PDF esportati restano sempre chiari, per essere leggibili su WhatsApp.</p>
+            <div className="field-stack mt">
+              <span className="label">Dimensione</span>
+              <div className="seg" role="group" aria-label="Dimensione dell'interfaccia">
+                {(
+                  [
+                    ['small', 'Piccola'],
+                    ['normal', 'Normale'],
+                    ['large', 'Grande']
+                  ] as [UiSize, string][]
+                ).map(([k, l]) => (
+                  <button key={k} className={uiSize === k ? 'active' : ''} aria-pressed={uiSize === k} onClick={() => setUiSize(k)}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="muted small">
+              Valgono solo per questo PC. La dimensione si adatta anche da sola alla finestra (schermo intero compreso). Le immagini e i
+              PDF esportati restano sempre chiari, per essere leggibili su WhatsApp.
+            </p>
           </div>
 
           <div className="card mt">

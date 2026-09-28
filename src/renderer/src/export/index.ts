@@ -27,7 +27,7 @@ const CARD_CSS = `
 .amr-title{margin:0;font-family:'Barlow Condensed',sans-serif;font-size:128px;line-height:.85;font-weight:700;text-transform:uppercase;letter-spacing:-.005em}
 .amr-title span{color:${RED}}
 .amr-date{font-size:24px;color:${INK_2}}
-.amr-cols,.amr-row{display:grid;grid-template-columns:80px 56px minmax(0,1fr) 124px 88px 128px 136px;align-items:center}
+.amr-cols,.amr-row{display:grid;grid-template-columns:72px 72px minmax(0,1fr) 124px 88px 128px 136px;align-items:center}
 .amr-cols{padding:22px 0 12px;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:${INK_3};border-bottom:2px solid #C2BCAD}
 .amr-cols span{text-align:center}
 .amr-cols span.l{text-align:left}
@@ -41,6 +41,7 @@ const CARD_CSS = `
 .amr-wl{font-family:'IBM Plex Mono',monospace;font-size:22px;text-align:center;color:${INK_2}}
 .amr-down{color:${RED_INK}}
 .amr-flat{color:${INK_3}}
+.amr-new{display:inline-block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:${INK_3}}
 .amr-foot{margin-top:auto;padding-top:40px;display:flex;justify-content:space-between;gap:24px;font-size:18px;color:${INK_3};line-height:1.5}
 .amr-foot span:last-child{text-align:right}
 `
@@ -62,7 +63,7 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
       const pos = s.position!
       const mv =
         s.positionChange == null
-          ? '<span class="amr-flat">nuovo</span>'
+          ? '<span class="amr-new">nuovo</span>'
           : s.positionChange > 0
             ? `▲${s.positionChange}`
             : s.positionChange < 0

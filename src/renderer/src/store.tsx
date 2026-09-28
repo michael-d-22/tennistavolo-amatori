@@ -7,10 +7,12 @@ interface Store {
   data: AppData
   computed: Computed
   /** Applica una modifica e salva. Restituisce false se la modifica ha lanciato un errore (già notificato). */
-  update: (fn: (d: AppData) => AppData, label?: string) => boolean
+  update: (fn: (d: AppData) => AppData, label?: string, opts?: { history?: boolean }) => boolean
   replaceAll: (d: AppData, label: string) => void
   undo: () => void
+  redo: () => void
   undoLabel: string | null
+  redoLabel: string | null
   toast: (msg: string, kind?: 'ok' | 'error') => void
   isNew: boolean
 }
@@ -23,6 +25,19 @@ export function useStore(): Store {
   return s
 }
 
+/**
+ * Una voce della cronologia Annulla/Ripeti. Le pubblicazioni non entrano nella cronologia
+ * (si tolgono da Pubblica → Elimina), quindi annullando si mantengono quelle attuali;
+ * solo import e ripristino backup ("full") riportano indietro anche le pubblicazioni.
+ */
+interface HistoryEntry {
+  data: AppData
+  label: string
+  full: boolean
+}
+
+const MAX_HISTORY = 30
+
 interface ToastMsg {
   id: number
   msg: string
@@ -33,7 +48,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<AppData | null>(null)
   const [isNew, setIsNew] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [history, setHistory] = useState<{ data: AppData; label: string }[]>([])
+  const [past, setPast] = useState<HistoryEntry[]>([])
+  const [future, setFuture] = useState<HistoryEntry[]>([])
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const saveChain = useRef<Promise<void>>(Promise.resolve())
 
@@ -68,7 +84,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const update = useCallback(
-    (fn: (d: AppData) => AppData, label = 'modifica') => {
+    (fn: (d: AppData) => AppData, label = 'modifica', opts?: { history?: boolean }) => {
       if (!data) return false
       let next: AppData
       try {
@@ -77,7 +93,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         toast((e as Error).message, 'error')
         return false
       }
-      setHistory((h) => [...h.slice(-19), { data, label }])
+      if (opts?.history !== false) {
+        setPast((h) => [...h.slice(-(MAX_HISTORY - 1)), { data, label, full: false }])
+        setFuture([])
+      }
       setData(next)
       setIsNew(false)
       persist(next)
@@ -88,7 +107,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const replaceAll = useCallback(
     (d: AppData, label: string) => {
-      if (data) setHistory((h) => [...h.slice(-19), { data, label }])
+      if (data) {
+        setPast((h) => [...h.slice(-(MAX_HISTORY - 1)), { data, label, full: true }])
+        setFuture([])
+      }
       setData(d)
       setIsNew(false)
       persist(d)
@@ -96,14 +118,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [data, persist]
   )
 
+  // Porta i dati allo stato della voce; le pubblicazioni restano quelle attuali (salvo "full").
+  const restore = useCallback(
+    (entry: HistoryEntry, current: AppData): AppData => (entry.full ? entry.data : { ...entry.data, snapshots: current.snapshots }),
+    []
+  )
+
   const undo = useCallback(() => {
-    const last = history[history.length - 1]
-    if (!last) return
-    setHistory((h) => h.slice(0, -1))
-    setData(last.data)
-    persist(last.data)
+    const last = past[past.length - 1]
+    if (!last || !data) return
+    setPast((h) => h.slice(0, -1))
+    setFuture((f) => [...f, { data, label: last.label, full: last.full }])
+    const next = restore(last, data)
+    setData(next)
+    persist(next)
     toast(`Annullato: ${last.label}`)
-  }, [history, persist, toast])
+  }, [past, data, persist, restore, toast])
+
+  const redo = useCallback(() => {
+    const nextEntry = future[future.length - 1]
+    if (!nextEntry || !data) return
+    setFuture((f) => f.slice(0, -1))
+    setPast((h) => [...h, { data, label: nextEntry.label, full: nextEntry.full }])
+    const next = restore(nextEntry, data)
+    setData(next)
+    persist(next)
+    toast(`Ripristinato: ${nextEntry.label}`)
+  }, [future, data, persist, restore, toast])
 
   const computed = useMemo(() => (data ? compute(data) : null), [data])
 
@@ -129,7 +170,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         update,
         replaceAll,
         undo,
-        undoLabel: history.length ? history[history.length - 1].label : null,
+        redo,
+        undoLabel: past.length ? past[past.length - 1].label : null,
+        redoLabel: future.length ? future[future.length - 1].label : null,
         toast,
         isNew
       }}

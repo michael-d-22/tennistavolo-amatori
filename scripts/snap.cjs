@@ -95,6 +95,8 @@ app.on('browser-window-created', (_e, win) => {
       // Aggiunge le partite successive alla pubblicazione e ricarica.
       const saved = JSON.parse(fs.readFileSync(path.join(dataDir, 'data.json'), 'utf8'))
       saved.matches.push(...matches.filter((m) => m.date > '2026-10-05'))
+      // Un giocatore entrato dopo la pubblicazione: in classifica compare come "nuovo".
+      saved.players.push({ id: 'p9', name: 'Chiara Bruno', joinedAt: '2026-10-20', status: 'active', createdAt: t0, updatedAt: t0 })
       fs.writeFileSync(path.join(dataDir, 'data.json'), JSON.stringify(saved))
       win.webContents.reload()
       await new Promise((r) => win.webContents.once('did-finish-load', r))
@@ -119,6 +121,17 @@ app.on('browser-window-created', (_e, win) => {
       await js(`document.querySelectorAll('.score-btn')[4].click()`)
       await wait(300)
       await shot('nuova-anteprima')
+      // Salva, annulla, ripeti: controlla i pulsanti in alto a destra.
+      const histState = () => js(`[...document.querySelectorAll('.history-bar button')].map(b => b.disabled ? 'off' : 'on').join('/')`)
+      await js(`document.querySelector('.btn-save').click()`)
+      await wait(300)
+      console.log('HISTORY dopo salva', await histState())
+      await js(`document.querySelectorAll('.history-bar button')[0].click()`)
+      await wait(300)
+      console.log('HISTORY dopo annulla', await histState())
+      await js(`document.querySelectorAll('.history-bar button')[1].click()`)
+      await wait(300)
+      console.log('HISTORY dopo ripeti', await histState())
       // Scheda giocatore
       await js(`document.querySelector('[data-page="classifica"]').click()`)
       await wait(200)

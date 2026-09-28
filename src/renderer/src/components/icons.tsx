@@ -62,6 +62,12 @@ export const IconUndo = () => (
     <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
   </svg>
 )
+export const IconRedo = () => (
+  <svg {...base}>
+    <path d="M15 14l5-5-5-5" />
+    <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+  </svg>
+)
 export const IconSun = () => (
   <svg {...base}>
     <circle cx="12" cy="12" r="4" />

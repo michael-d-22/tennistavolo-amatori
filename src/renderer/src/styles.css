@@ -1818,3 +1818,9 @@ tr.tour.clickable:hover td {
   font-size: 11px;
   opacity: 0.75;
 }
+.aside-head {
+  gap: 12px;
+}
+.aside-head > span {
+  white-space: nowrap;
+}

@@ -14,6 +14,7 @@
     "test": "vitest run",
     "build:win": "electron-vite build && electron-builder --win",
     "screenshots": "electron-vite build && electron scripts/snap.cjs snaps",
+    "e2e": "electron-vite build && electron scripts/e2e.cjs",
     "icon": "electron scripts/make-icon.cjs",
     "guide": "electron scripts/make-guide.cjs"
   },

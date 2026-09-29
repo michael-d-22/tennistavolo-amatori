@@ -34,6 +34,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
     let l = 0
     let excluded = 0
     let pts = 0
+    let tour = 0
     for (const r of mine) {
       const m = r.match
       if (m.playerA !== o.player.id && m.playerB !== o.player.id) continue
@@ -41,13 +42,15 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
         excluded++
         continue
       }
+      // Le partite di torneo valgono per punti e V–P, ma non per minimo e massimo per coppia.
+      if (m.tournamentId) tour++
       const iAmA = m.playerA === id
       const won = iAmA ? m.setsA > m.setsB : m.setsB > m.setsA
       if (won) w++
       else l++
       pts += iAmA ? r.deltaA : -r.deltaA
     }
-    return { o, w, l, excluded, pts, count: computed.pairCounted.get(pairKey(id, o.player.id)) ?? 0 }
+    return { o, w, l, excluded, pts, tour, count: computed.pairCounted.get(pairKey(id, o.player.id)) ?? 0 }
   })
 
   const history = computed.history.get(id) ?? []
@@ -142,7 +145,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
               </tr>
             </thead>
             <tbody>
-              {h2h.map(({ o, w, l, excluded, pts, count }) => {
+              {h2h.map(({ o, w, l, excluded, pts, tour, count }) => {
                 const oRetired = o.player.status === 'retired'
                 const required = !oRetired && !retired
                 const missing = required ? Math.max(0, min - count) : 0
@@ -162,6 +165,11 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                           <span className={`mono small ${missing ? 'neg' : 'dim'}`}>
                             {missing ? (missing === 1 ? 'manca 1' : `mancano ${missing}`) : count >= max ? 'completo' : count}
                           </span>
+                          {tour > 0 && (
+                            <span className="tour-tag" title="Partite di torneo: contano per i punti ma non per minimo e massimo">
+                              +{tour} torneo
+                            </span>
+                          )}
                         </span>
                       )}
                     </td>

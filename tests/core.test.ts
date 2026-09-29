@@ -15,6 +15,7 @@ import {
   updatePlayer,
   setMatchOverride,
   updateMatch,
+  updateMeta,
   updateTournament,
   type TournamentDraft
 } from '../src/core/mutations'
@@ -702,5 +703,21 @@ describe('tornei: prova a raffica', () => {
     // La prova deve aver accettato un bel po' di operazioni, non solo rifiutato tutto.
     expect(accepted).toBeGreaterThan(100)
     expect(bracketPlayed).toBeGreaterThan(20)
+  })
+})
+
+describe('impostazioni', () => {
+  it('rifiuta valori senza senso', () => {
+    const d = emptyData(new Date('2026-09-28'))
+    const s = d.settings
+    expect(() => updateMeta(d, d.season, { ...s, k: 0 })).toThrow('K')
+    expect(() => updateMeta(d, d.season, { ...s, tournamentK: 0 })).toThrow('tornei')
+    expect(() => updateMeta(d, d.season, { ...s, maxMatchesPerPair: 0, minMatchesPerPair: 0 })).toThrow('almeno 1')
+    expect(() => updateMeta(d, d.season, { ...s, minMatchesPerPair: 9 })).toThrow('soglia')
+    expect(() => updateMeta(d, d.season, { ...s, publishEveryDays: 0 })).toThrow('pubblicazioni')
+    expect(() => updateMeta(d, d.season, { ...s, startRating: 0 })).toThrow('partenza')
+    expect(() => updateMeta(d, { ...d.season, name: '  ' }, s)).toThrow('nome')
+    expect(() => updateMeta(d, { ...d.season, endDate: '2026-01-01' }, s)).toThrow('finire prima')
+    expect(updateMeta(d, { ...d.season, name: ' Stagione X ' }, { ...s, k: 40 }).season.name).toBe('Stagione X')
   })
 })

@@ -33,10 +33,6 @@ export function ImpostazioniPage() {
     setSettings({ ...settings, [k]: Math.max(0, Number(e.target.value) || 0) })
 
   function saveMeta() {
-    if (settings.minMatchesPerPair > settings.maxMatchesPerPair) {
-      toast('La soglia minima non può superare il limite massimo', 'error')
-      return
-    }
     if (update((d) => updateMeta(d, season, settings), 'impostazioni')) toast('Impostazioni salvate, classifica ricalcolata')
   }
 

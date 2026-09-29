@@ -319,8 +319,22 @@ export function restoreMatch(data: AppData, id: string): AppData {
   )
 }
 
+/** Stagione e regolamento: niente valori che renderebbero la classifica senza senso. */
 export function updateMeta(data: AppData, season: Season, settings: Settings): AppData {
-  return { ...data, season, settings, metaUpdatedAt: nowISO() }
+  const name = season.name.trim()
+  if (!name) throw new Error('Il nome della stagione è obbligatorio')
+  const date = /^\d{4}-\d{2}-\d{2}$/
+  if (!date.test(season.startDate) || !date.test(season.endDate)) throw new Error('Date della stagione non valide')
+  if (season.startDate > season.endDate) throw new Error('La stagione non può finire prima di iniziare')
+  const whole = (n: number) => Number.isInteger(n)
+  if (!whole(settings.startRating) || settings.startRating <= 0) throw new Error('Il punteggio di partenza deve essere maggiore di zero')
+  if (!(settings.k > 0)) throw new Error('Il fattore K deve essere maggiore di zero')
+  if (!(settings.tournamentK > 0)) throw new Error('Il fattore K dei tornei deve essere maggiore di zero')
+  if (!whole(settings.maxMatchesPerPair) || settings.maxMatchesPerPair < 1) throw new Error('Il massimo di partite per coppia deve essere almeno 1')
+  if (!whole(settings.minMatchesPerPair) || settings.minMatchesPerPair < 0) throw new Error('La soglia di qualificazione non può essere negativa')
+  if (settings.minMatchesPerPair > settings.maxMatchesPerPair) throw new Error('La soglia minima non può superare il limite massimo')
+  if (!whole(settings.publishEveryDays) || settings.publishEveryDays < 1) throw new Error('I giorni tra le pubblicazioni devono essere almeno 1')
+  return { ...data, season: { ...season, name }, settings, metaUpdatedAt: nowISO() }
 }
 
 export function publishSnapshot(data: AppData, c: Computed, date: string, title?: string): AppData {

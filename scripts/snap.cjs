@@ -88,6 +88,30 @@ tourGames.forEach(([a, b, sets, stage], i) => {
   const setsB = sets.length - setsA
   matches.push({ id: `t${i}`, date: '2026-10-24', playerA: `p${a}`, playerB: `p${b}`, setsA, setsB, tournamentId: 't1', stage, setScores: sets, createdAt: t, updatedAt: t })
 })
+// Un secondo torneo ancora in corso (girone unico a 5, poi semifinali): per le schermate dell'inserimento.
+const tournament2 = {
+  id: 't2',
+  date: '2026-10-28',
+  name: 'Torneo di Halloween',
+  k: 48,
+  format: 'group-bracket',
+  groups: [{ id: 'gH', name: 'A', players: ['p0', 'p1', 'p2', 'p3', 'p4'] }],
+  bracketRounds: 2,
+  thirdPlace: false,
+  draw: [null, null, null, null],
+  createdAt: t0,
+  updatedAt: t0
+}
+;[
+  [0, 4, [[11, 5], [11, 8], [11, 6]]],
+  [1, 2, [[11, 9], [9, 11], [11, 7], [11, 8]]],
+  [3, 4, [[7, 11], [11, 9], [11, 13], [11, 6], [11, 9]]],
+  [0, 3, [[11, 7], [12, 10], [11, 4]]]
+].forEach(([a, b, sets], i) => {
+  const t = new Date(Date.parse('2026-10-28T16:00:00Z') + i * 60000).toISOString()
+  const setsA = sets.filter(([x, y]) => x > y).length
+  matches.push({ id: `h${i}`, date: '2026-10-28', playerA: `p${a}`, playerB: `p${b}`, setsA, setsB: sets.length - setsA, tournamentId: 't2', stage: { type: 'group', group: 'gH' }, setScores: sets, createdAt: t, updatedAt: t })
+})
 const data = {
   schemaVersion: 2,
   season: { name: 'Stagione 2026-2027', startDate: '2026-09-28', endDate: '2027-06-30' },
@@ -95,7 +119,7 @@ const data = {
   metaUpdatedAt: t0,
   players,
   matches: matches.filter((m) => m.date <= '2026-10-05'),
-  tournaments: [tournament],
+  tournaments: [tournament, tournament2],
   snapshots: []
 }
 fs.writeFileSync(path.join(dataDir, 'data.json'), JSON.stringify(data))
@@ -181,15 +205,23 @@ app.on('browser-window-created', (_e, win) => {
       await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Torneo').click()`)
       await wait(200)
       await js(`(() => { const s = document.querySelector('.tour-bar select');
-        s.value = 't1'; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
-      await wait(200)
-      await pick(0, 1)
-      await wait(100)
-      await pick(1, 4)
-      await wait(100)
-      await js(`document.querySelectorAll('.score-btn')[3].click()`)
+        s.value = 't2'; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
       await wait(300)
+      // Coppia dall'elenco "da giocare", risultato 3–1 e punteggi dei set.
+      await js(`document.querySelectorAll('.pair-chip')[1].click()`)
+      await wait(150)
+      await js(`document.querySelectorAll('.score-btn')[1].click()`)
+      await wait(200)
+      await js(`(() => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+        const vals = ['11', '8', '9', '11', '11', '6', '13', '11']
+        document.querySelectorAll('.set-pair input').forEach((el, i) => { setter.call(el, vals[i]); el.dispatchEvent(new Event('input', { bubbles: true })) })
+      })()`)
+      await wait(1000)
       await shot('nuova-torneo')
+      await js(`(() => { const s = document.querySelector('.tour-bar select');
+        s.value = 't1'; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+      await wait(300)
       // Finestra di impostazione con gli accoppiamenti del primo turno
       await js(`[...document.querySelectorAll('.tour-bar button')].find(b=>b.textContent==='Imposta').click()`)
       await wait(400)
@@ -249,6 +281,7 @@ app.on('browser-window-created', (_e, win) => {
       // Riepilogo del torneo: anteprima e immagine esportata
       await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Torneo').click()`)
       await wait(600)
+      await wait(4000) // lascia sparire le notifiche degli export (contengono percorsi locali)
       await shot('pubblica-torneo')
       console.log('PUBBLICA TORNEO', await js(`document.querySelector('.publish-side, .empty')?.innerText.split('\\n').join(' | ')`))
       for (const label of ['Salva PNG', 'Salva PDF']) {

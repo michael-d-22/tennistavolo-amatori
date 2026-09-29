@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { daysBetween, formatLongDate, todayISO } from '@core/format'
 import { useStore } from './store'
-import logo from './assets/logo.png'
+import { Logo } from './components/Logo'
 import { setTheme, useTheme } from './theme'
 import {
   IconGrid,
@@ -133,7 +133,7 @@ export function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-logo">
-            <img src={logo} alt="Tornei e partite interne tennistavolo" />
+            <Logo />
           </div>
           <div className="brand-name">Classifica Amatori</div>
           <div className="brand-season">{data.season.name}</div>

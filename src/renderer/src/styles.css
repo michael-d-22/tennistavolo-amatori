@@ -241,15 +241,26 @@ input[type='checkbox'] {
   padding: 0 4px;
 }
 .brand-logo {
-  background: #ffffff;
-  border-radius: 6px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
+  padding: 4px 18px 0;
+  margin-bottom: 14px;
 }
-.brand-logo img {
+/* Logo trasparente: scritte blu col tema chiaro, color crema col tema scuro (quello predefinito). */
+.logo {
+  display: block;
+}
+.logo img {
   display: block;
   width: 100%;
   height: auto;
+}
+.logo .logo-dark {
+  display: none;
+}
+:root:not([data-theme='light']) .logo .logo-light {
+  display: none;
+}
+:root:not([data-theme='light']) .logo .logo-dark {
+  display: block;
 }
 .brand-name {
   font-family: var(--cond);
@@ -1498,11 +1509,8 @@ tr.excluded .btn.danger {
 }
 .welcome-logo {
   display: block;
-  width: 220px;
+  width: 200px;
   margin: 0 auto 24px;
-  padding: 14px;
-  background: #ffffff;
-  border-radius: 6px;
 }
 .welcome h1 {
   font-family: var(--cond);

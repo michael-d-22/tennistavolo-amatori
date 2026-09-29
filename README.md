@@ -36,7 +36,7 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
   escludere a mano.
 - **Tema scuro** (predefinito) e **tema chiaro**, oppure automatico come Windows. Grafica “da tabellone”: blu e rosso del
   logo, numeri in Barlow Condensed, testi in IBM Plex Sans e Plex Mono (font inclusi nell'app, funzionano anche offline).
-- **Backup automatici**, ripristino con un clic, **Ctrl+Z** per annullare l'ultima modifica.
+- **Backup automatici**, ripristino con un clic, **Ctrl+Z / Ctrl+Y** (o i pulsanti in alto a destra) per annullare e ripetere.
 - **Esporta e importa i dati** (file `.amat`) per spostarli su un altro PC o, in futuro, su Android.
 
 | Nuova partita | Scontri diretti |
@@ -74,7 +74,9 @@ Tutti i numeri (punti di partenza, K, limite e soglia, giorni tra le pubblicazio
 
 ## Installazione
 
-Dalla pagina delle release, oppure compilando il progetto (vedi sotto), si ottengono due file:
+**[⬇ Scarica l'ultima versione](https://github.com/michael-d-22/tennistavolo-amatori/releases/latest)** (pagina delle release).
+
+Dalla release, oppure compilando il progetto (vedi sotto), si ottengono due file:
 
 - `TennistavoloAmatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
 - `TennistavoloAmatori-Portable-x.y.z.exe`: si avvia senza installare nulla.

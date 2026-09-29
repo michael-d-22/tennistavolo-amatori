@@ -224,7 +224,8 @@ app.on('browser-window-created', (_e, win) => {
       await wait(300)
       // Finestra di impostazione con gli accoppiamenti del primo turno
       await js(`[...document.querySelectorAll('.tour-bar button')].find(b=>b.textContent==='Imposta').click()`)
-      await wait(400)
+      await wait(800)
+      await shot('torneo-imposta-top')
       await js(`document.querySelector('.modal-body').scrollTop = 10000`)
       await wait(200)
       await shot('torneo-imposta')

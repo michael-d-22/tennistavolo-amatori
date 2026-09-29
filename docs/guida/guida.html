@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<title>Classifica Amatori · Guida all'app</title>
+<title>Classifica Amatori · Manuale d'uso</title>
 <style>
 @font-face{font-family:'Barlow Condensed';font-weight:700;src:url(../../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2) format('woff2')}
 @font-face{font-family:'Barlow Condensed';font-weight:600;src:url(../../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2) format('woff2')}
@@ -11,41 +11,42 @@
 @font-face{font-family:'IBM Plex Mono';font-weight:500;src:url(../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2) format('woff2')}
 
 @page{size:A4;margin:16mm 17mm 18mm}
-:root{--ink:#131A45;--ink2:#454B6B;--ink3:#6B6F86;--red:#C8231A;--rule:#DDD8CC;--paper:#F5F2EB}
+:root{--ink:#131A45;--ink2:#454B6B;--ink3:#6B6F86;--red:#C8231A;--rule:#DDD8CC;--paper:#F5F2EB;--gold:#8A5A00}
 *{box-sizing:border-box}
 html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-body{margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:11.5pt;line-height:1.5;color:var(--ink)}
+body{margin:0;font-family:'IBM Plex Sans',sans-serif;font-size:11pt;line-height:1.5;color:var(--ink)}
 h1,h2,h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.01em;margin:0;line-height:1}
 h2{font-size:30pt;margin:0 0 4mm;padding-bottom:3mm;border-bottom:1.2mm solid var(--ink);break-after:avoid}
 h2 .n{color:var(--red);margin-right:3mm}
-h3{font-size:16pt;margin:7mm 0 2.5mm;break-after:avoid}
+h3{font-size:15.5pt;margin:6mm 0 2.5mm;break-after:avoid}
 p{margin:0 0 3mm}
 ul,ol{margin:0 0 3mm;padding-left:6mm}
-li{margin-bottom:1.6mm}
+li{margin-bottom:1.4mm}
 b,strong{font-weight:600}
-.mono{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.mono{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:10pt}
 .label{font-family:'IBM Plex Mono',monospace;font-size:8.5pt;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 .page{break-before:page}
-.lead{font-size:13pt;color:var(--ink2)}
+.lead{font-size:12.5pt;color:var(--ink2)}
 .shot{margin:3mm 0 1.5mm;border:.3mm solid var(--rule);display:block;width:100%}
-.cap{font-size:9pt;color:var(--ink3);margin-bottom:5mm}
+.shot.m{width:78%}
+.shot.s{width:56%}
+.cap{font-size:9pt;color:var(--ink3);margin-bottom:4mm}
 .fig{break-inside:avoid}
-.note{background:var(--paper);padding:4mm 5mm;margin:4mm 0;break-inside:avoid}
+.note{background:var(--paper);padding:3.5mm 5mm;margin:3.5mm 0;break-inside:avoid}
 .note .label{display:block;margin-bottom:1.5mm;color:var(--red)}
-table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:10.5pt}
+.note.tip .label{color:var(--gold)}
+table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:10pt}
 th{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:8pt;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:0 3mm 2mm 0;border-bottom:.4mm solid #C2BCAD}
-td{padding:2.4mm 3mm 2.4mm 0;border-bottom:.3mm solid var(--rule);vertical-align:top}
+td{padding:2.2mm 3mm 2.2mm 0;border-bottom:.3mm solid var(--rule);vertical-align:top}
 tr{break-inside:avoid}
-td:first-child{font-weight:600;width:34%}
+td:first-child{font-weight:600;width:32%}
 .steps{counter-reset:s;list-style:none;padding:0}
-.steps li{counter-increment:s;position:relative;padding-left:11mm;margin-bottom:3mm;break-inside:avoid}
-.steps li::before{content:counter(s);position:absolute;left:0;top:-1.5mm;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20pt;color:var(--red)}
+.steps li{counter-increment:s;position:relative;padding-left:10mm;margin-bottom:2.6mm;break-inside:avoid}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1.3mm;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:19pt;color:var(--red)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:7mm;align-items:start}
-.q{border-bottom:.3mm solid var(--rule);padding:3mm 0 3mm 9mm;position:relative;break-inside:avoid}
-.q::before{content:'';position:absolute;left:0;top:4mm;width:4.5mm;height:4.5mm;border:.4mm solid var(--ink)}
-.q b{display:block}
-.q span{color:var(--ink2);font-size:10.5pt}
+.two.l{grid-template-columns:1.15fr 1fr}
 .sq{display:inline-block;width:3mm;height:3mm;border-radius:.4mm;vertical-align:-.3mm}
+.key{font-family:'IBM Plex Mono',monospace;font-size:9pt;border:.3mm solid #C2BCAD;border-radius:1mm;padding:0 1.4mm;background:#fff;white-space:nowrap}
 
 /* Copertina */
 .cover{height:255mm;overflow:hidden;display:flex;flex-direction:column}
@@ -56,6 +57,18 @@ td:first-child{font-weight:600;width:34%}
 .cover .sub{font-size:15pt;color:var(--ink2);margin-top:6mm}
 .cover .shot{margin-top:9mm;width:88%}
 .cover-foot{margin-top:auto;display:flex;justify-content:space-between;border-top:1.2mm solid var(--ink);padding-top:4mm}
+
+/* Indice */
+.toc{list-style:none;padding:0;margin:6mm 0 0}
+.toc li{display:grid;grid-template-columns:12mm 1fr;gap:2mm;padding:3mm 0;border-bottom:.3mm solid var(--rule);margin:0;break-inside:avoid}
+.toc .n{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20pt;line-height:1;color:var(--red)}
+.toc b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:15pt;text-transform:uppercase;line-height:1.1}
+.toc span{font-size:10pt;color:var(--ink2)}
+
+/* Domande frequenti */
+.faq{border-bottom:.3mm solid var(--rule);padding:3mm 0;break-inside:avoid}
+.faq b{display:block;margin-bottom:1mm}
+.faq span{color:var(--ink2);font-size:10.5pt}
 </style>
 </head>
 <body>
@@ -64,180 +77,347 @@ td:first-child{font-weight:600;width:34%}
 <section class="cover">
   <div class="cover-top">
     <img class="logo" src="img/logo.png" alt="Tornei e partite interne tennistavolo">
-    <span class="label">Guida all'uso · settembre 2026</span>
+    <span class="label">Manuale d'uso · versione 1.0.0</span>
   </div>
   <h1>Classifica<br><span>Amatori</span></h1>
-  <p class="sub">L'app per registrare le partite di fine allenamento e i tornei, e tenere la classifica Elo della stagione 2026–27. Come funziona, in poche pagine.</p>
+  <p class="sub">Come usare l'app per registrare le partite di fine allenamento e i tornei, tenere la classifica Elo e pubblicarla nel gruppo WhatsApp.</p>
   <img class="shot" src="img/classifica.png" alt="La schermata della classifica">
   <div class="cover-foot">
     <span class="label">Tornei e partite interne tennistavolo</span>
-    <span class="label">App per Windows · funziona anche senza internet</span>
+    <span class="label">App per Windows · funziona senza internet</span>
+  </div>
+</section>
+
+<!-- Indice -->
+<section class="page">
+  <h2>Indice</h2>
+  <ol class="toc">
+    <li><span class="n">1</span><div><b>Installazione e primo avvio</b><span>Installare l'app, superare l'avviso di Windows, inserire i giocatori.</span></div></li>
+    <li><span class="n">2</span><div><b>Come è fatta l'app</b><span>Le pagine, i pulsanti sempre presenti, le scorciatoie.</span></div></li>
+    <li><span class="n">3</span><div><b>Registrare le partite di una serata</b><span>Il lavoro di ogni allenamento, in pochi clic.</span></div></li>
+    <li><span class="n">4</span><div><b>Correggere un errore</b><span>Annulla, modifica, elimina, cestino, includere o escludere a mano.</span></div></li>
+    <li><span class="n">5</span><div><b>Gestire i giocatori</b><span>Nuovi arrivi, nomi, chi smette e chi torna.</span></div></li>
+    <li><span class="n">6</span><div><b>Leggere classifica e statistiche</b><span>Classifica, scheda giocatore, scontri diretti.</span></div></li>
+    <li><span class="n">7</span><div><b>I tornei</b><span>Gironi, tabellone, la X, correzioni ed eliminazione.</span></div></li>
+    <li><span class="n">8</span><div><b>Pubblicare nel gruppo</b><span>La classifica ogni due settimane e il riepilogo dei tornei.</span></div></li>
+    <li><span class="n">9</span><div><b>Impostazioni, dati e backup</b><span>Regolamento, aspetto, salvataggi, cambio di PC, aggiornamenti.</span></div></li>
+    <li><span class="n">10</span><div><b>Il regolamento applicato</b><span>Le regole della stagione e come le applica l'app.</span></div></li>
+    <li><span class="n">11</span><div><b>Domande frequenti</b><span>I dubbi e gli imprevisti più comuni.</span></div></li>
+  </ol>
+  <div class="note">
+    <span class="label">Nota sulle immagini</span>
+    Nomi e risultati nelle immagini di questo manuale sono inventati: servono solo a mostrare l'app.
   </div>
 </section>
 
 <!-- 1 -->
 <section class="page">
-  <h2><span class="n">1</span>In breve</h2>
-  <p class="lead">A fine serata inserisci chi ha giocato con chi e il risultato in set. L'app calcola i punti, applica da sola il regolamento e ogni due settimane prepara la classifica da mandare nel gruppo.</p>
-  <ul>
-    <li><b>Due clic per partita:</b> scegli i due giocatori e il risultato (3–0, 3–1, 3–2…). Prima di salvare vedi già quanti punti prende e perde ciascuno.</li>
-    <li><b>Classifica sempre aggiornata</b>, con le frecce ▲▼ e i punti guadagnati o persi dall'ultima pubblicazione.</li>
-    <li><b>Tornei</b> con gironi e tabellone: le partite si inseriscono fase per fase, contano con un K più alto e il riepilogo si pubblica nel gruppo come la classifica.</li>
-    <li><b>Pubblicazione</b> con un clic: un'immagine pronta da incollare su WhatsApp, oppure testo, PDF o Excel.</li>
-    <li><b>Niente si perde:</b> le partite che non contano restano visibili (barrate, con il motivo), ogni errore si può annullare e l'app fa da sola i salvataggi di sicurezza.</li>
-  </ul>
-  <div class="note">
-    <span class="label">Nota sulle immagini</span>
-    Nomi e risultati nelle immagini di questa guida sono inventati, servono solo a far vedere com'è l'app.
+  <h2><span class="n">1</span>Installazione e primo avvio</h2>
+  <h3 style="margin-top:0">Installare</h3>
+  <ol class="steps">
+    <li>Scarica <span class="mono">TennistavoloAmatori-Setup-1.0.0.exe</span> e aprilo con un doppio clic.</li>
+    <li>Se compare <b>“PC protetto da Windows”</b>, clicca <b>Ulteriori informazioni</b> e poi <b>Esegui comunque</b>. L'avviso compare perché l'app non è venduta in un negozio online: è normale e succede solo la prima volta.</li>
+    <li>Segui l'installazione (puoi lasciare tutto com'è). Alla fine trovi l'icona <b>Tornei e partite interne tennistavolo</b> sul desktop e nel menu Start.</li>
+  </ol>
+  <div class="note tip">
+    <span class="label">Senza installare</span>
+    In alternativa c'è <span class="mono">TennistavoloAmatori-Portable-1.0.0.exe</span>: si avvia con un doppio clic, senza installare nulla, anche da una chiavetta. I dati sono gli stessi in entrambi i casi.
   </div>
-
+  <div class="two l">
+    <div>
+      <h3>Il primo avvio</h3>
+      <p>La prima volta l'app chiede solo due cose:</p>
+      <ol class="steps">
+        <li><b>Il nome della stagione</b> (già proposto, puoi lasciarlo).</li>
+        <li><b>I giocatori del gruppo</b>, uno per riga: nome e cognome.</li>
+        <li>Clicca <b>Inizia</b>. Tutti partono da 1200 punti.</li>
+      </ol>
+      <p>Se hai già un file di dati (per esempio da un altro PC), clicca invece <b>“Ho già un file dati…”</b> e sceglilo.</p>
+      <p>Dimenticato qualcuno? Nessun problema: i giocatori si aggiungono in qualsiasi momento (capitolo 5).</p>
+    </div>
+    <div class="fig">
+      <img class="shot" src="img/benvenuto.png" alt="Schermata di benvenuto" style="margin-top:9mm">
+      <div class="cap">La schermata del primo avvio.</div>
+    </div>
+  </div>
 </section>
 
+<!-- 2 -->
 <section class="page">
-  <h2><span class="n">2</span>Il regolamento nell'app</h2>
-  <p>Ecco come l'app applica il regolamento della stagione. Tutti i numeri si possono cambiare in qualsiasi momento da <b>Impostazioni</b>.</p>
+  <h2><span class="n">2</span>Come è fatta l'app</h2>
+  <div class="fig">
+    <img class="shot" src="img/classifica.png" alt="L'app, pagina Classifica" style="width:60%">
+    <div class="cap">A sinistra il menu, al centro la pagina scelta, in alto a destra Annulla e Ripeti.</div>
+  </div>
   <table>
-    <tr><th>Regola</th><th>Cosa fa l'app</th></tr>
-    <tr><td>Si parte da 1200 punti</td><td>Tutti, anche chi entra a stagione in corso.</td></tr>
-    <tr><td>Punteggio Elo con K = 32</td><td>Chi batte un avversario più forte guadagna di più; chi perde con uno più debole perde di più. Tra due giocatori alla pari, chi vince prende 16 punti e l'altro li perde.</td></tr>
-    <tr><td>Al massimo 8 partite con lo stesso avversario</td><td>Dalla 9ª in poi la partita viene registrata ma <b>non conta</b> (“esubero”). L'app lo dice prima di salvare e le raccoglie in una tabella a parte.</td></tr>
-    <tr><td>In classifica ufficiale solo con almeno 2 partite contro ciascuno</td><td>Chi non ci arriva resta nella classifica dell'app con una riga rossa sotto il nome, per esempio “3 partite per entrare in classifica”.</td></tr>
-    <tr><td>Chi smette di giocare</td><td>Lo segni come <b>inattivo</b>: tutte le sue partite restano salvate ma vanno in pausa, cioè non contano più per nessuno, e i punti di tutti vengono ricalcolati. Se torna, lo riattivi e tornano a contare.</td></tr>
-    <tr><td>Tornei (K = 48)</td><td>Le partite di torneo valgono per la classifica con un K più alto, scelto torneo per torneo, e non rientrano né nelle 8 per coppia né nelle 2 minime.</td></tr>
-    <tr><td>Casi particolari</td><td>Ogni singola partita si può includere o escludere a mano, scrivendo il motivo.</td></tr>
-    <tr><td>Classifica ogni 2 settimane</td><td>Un pallino rosso su “Pubblica” ricorda quando è ora.</td></tr>
+    <tr><th>Nel menu</th><th>A cosa serve</th></tr>
+    <tr><td>Nuova partita <span class="label">rosso</span></td><td>Registrare le partite della serata e quelle dei tornei.</td></tr>
+    <tr><td>Classifica</td><td>La classifica aggiornata, con variazioni dall'ultima pubblicazione.</td></tr>
+    <tr><td>Partite</td><td>Tutte le partite, per serata e per torneo: correggere, escludere, eliminare, recuperare dal cestino.</td></tr>
+    <tr><td>Scontri diretti</td><td>Chi ha giocato con chi e quante volte; le partite in esubero.</td></tr>
+    <tr><td>Giocatori</td><td>Aggiungere giocatori e vedere lo stato di ciascuno.</td></tr>
+    <tr><td>Pubblica</td><td>Preparare immagine o testo per il gruppo WhatsApp (classifica e tornei).</td></tr>
+    <tr><td>Impostazioni</td><td>Regolamento, aspetto, dati e backup.</td></tr>
   </table>
+  <p>In basso a sinistra: la data dell'ultima pubblicazione e il pulsante per passare dal <b>tema scuro</b> al <b>tema chiaro</b>.</p>
+  <h3>Scorciatoie da tastiera</h3>
+  <table>
+    <tr><td><span class="key">Ctrl</span> + <span class="key">1</span> … <span class="key">7</span></td><td>Aprire le pagine del menu, nell'ordine (Ctrl+2 = Nuova partita).</td></tr>
+    <tr><td><span class="key">Ctrl</span> + <span class="key">Z</span></td><td>Annullare l'ultima operazione.</td></tr>
+    <tr><td><span class="key">Ctrl</span> + <span class="key">Y</span></td><td>Ripetere un'operazione annullata.</td></tr>
+    <tr><td><span class="key">Invio</span></td><td>In Nuova partita, dal campo Note: salvare la partita.</td></tr>
+  </table>
+  <p>L'app <b>salva da sola</b> ogni modifica: non esiste un pulsante “Salva file” e si può chiudere in qualsiasi momento.</p>
 </section>
 
 <!-- 3 -->
 <section class="page">
-  <h2><span class="n">3</span>Una serata tipo</h2>
+  <h2><span class="n">3</span>Registrare le partite di una serata</h2>
   <ol class="steps">
-    <li><b>Clicca il pulsante rosso “Nuova partita”</b> (in alto a sinistra, o Ctrl+2).</li>
+    <li>Clicca il pulsante rosso <b>“Nuova partita”</b>. In alto deve essere scelto <b>“Partita singola”</b>.</li>
+    <li>Controlla la <b>data</b> in alto a destra: è quella di oggi. Se stai inserendo le partite di un'altra sera, cambiala.</li>
     <li><b>Scegli i due giocatori</b> dai due menu. Accanto al nome c'è il punteggio attuale.</li>
     <li><b>Clicca il risultato</b> sotto il giocatore che ha vinto: 3–0, 3–1 o 3–2.</li>
-    <li><b>Controlla l'anteprima:</b> quanti punti prende chi vince, quanti ne perde l'altro, e quante partite valide hanno già giocato tra loro (su 8).</li>
-    <li><b>Salva</b> (o premi Invio). La partita compare a destra nell'elenco “Stasera” e puoi inserire subito la successiva.</li>
+    <li><b>Guarda l'anteprima:</b> quanti punti prende chi vince, quanti ne perde l'altro, e quante partite valide hanno già giocato tra loro (su 8).</li>
+    <li>Se vuoi, scrivi una nota. Poi <b>“Salva partita”</b> (o Invio). La partita compare a destra in “Stasera” e i campi si svuotano per la successiva.</li>
   </ol>
   <div class="fig">
     <img class="shot" src="img/nuova-anteprima.png" alt="Schermata Nuova partita">
-    <div class="cap">Nuova partita: vince Luca Ferri 3–1. Andrea Neri perde 16 punti, Ferri ne guadagna 16. Tra loro sarà la seconda partita valida su 8.</div>
+    <div class="cap">Vince Luca Ferri 3–1: Andrea Neri perde 16,8 punti, Ferri li guadagna. Tra loro sarà la seconda partita valida su 8.</div>
   </div>
   <div class="note">
-    <span class="label">Hai sbagliato?</span>
-    In alto a destra ci sono le frecce <b>Annulla</b> e <b>Ripeti</b> (anche Ctrl+Z e Ctrl+Y). Una partita si può anche correggere o eliminare in qualsiasi momento dalla pagina <b>Partite</b>: la classifica si ricalcola da sola, anche per le partite delle settimane precedenti.
+    <span class="label">Quando una partita non conta</span>
+    Se due giocatori hanno già giocato 8 partite valide tra loro, l'anteprima lo dice prima di salvare: la partita viene registrata comunque, ma va “in esubero” e non dà né toglie punti. Lo stesso succede se uno dei due è inattivo.
   </div>
+  <p>Si possono inserire anche partite di serate passate: la classifica viene ricalcolata da quel giorno in poi, nell'ordine giusto.</p>
 </section>
 
 <!-- 4 -->
 <section class="page">
-  <h2><span class="n">4</span>Leggere la classifica</h2>
-  <div class="fig">
-    <img class="shot" src="img/classifica.png" alt="Schermata Classifica">
-    <div class="cap">In alto i numeri della stagione; sotto la classifica. Clicca un nome per aprire la sua scheda.</div>
-  </div>
+  <h2><span class="n">4</span>Correggere un errore</h2>
+  <h3 style="margin-top:0">Appena fatto: Annulla</h3>
+  <p>Le frecce in alto a destra (o <span class="key">Ctrl</span>+<span class="key">Z</span>) annullano l'ultima operazione: una partita salvata, un giocatore aggiunto, un torneo eliminato… Si possono annullare anche più operazioni di fila, e <span class="key">Ctrl</span>+<span class="key">Y</span> le ripete.</p>
+  <h3>In qualsiasi momento: la pagina Partite</h3>
+  <p>Le partite sono divise per serata; ogni torneo ha il suo gruppo, evidenziato in oro. In alto si può filtrare per giocatore e scegliere <b>Tutte, Valide, Escluse</b> o il <b>Cestino</b>. Per ogni partita:</p>
   <table>
-    <tr><th>Colonna</th><th>Significato</th></tr>
-    <tr><td># e frecce</td><td>Posizione e posti guadagnati (▲) o persi (▼) dall'ultima pubblicazione. “Nuovo” per chi non c'era.</td></tr>
-    <tr><td>Punti · Var.</td><td>Punteggio Elo attuale e differenza rispetto all'ultima pubblicazione.</td></tr>
-    <tr><td>G · V · P · Set</td><td>Partite valide giocate, vinte, perse; set vinti–persi.</td></tr>
-    <tr><td>Ultime 5</td><td><span class="sq" style="background:#22A55B"></span> vinta &nbsp; <span class="sq" style="background:#E0443A"></span> persa, dalla più vecchia alla più recente.</td></tr>
-    <tr><td>Riga rossa sotto il nome</td><td>Quante partite mancano per entrare in classifica ufficiale. Passando col mouse si vede con chi.</td></tr>
+    <tr><td>Modifica</td><td>Cambiare data, giocatori, risultato, note. Per le partite di torneo con gironi o tabellone si correggono risultato, set e note (giocatori e fase no: in quel caso si elimina e si reinserisce).</td></tr>
+    <tr><td>Escludi / Includi</td><td>Decidere a mano se una partita conta, scrivendo il motivo. Serve per i casi particolari, per esempio far contare una partita in esubero.</td></tr>
+    <tr><td>Elimina</td><td>La partita va nel <b>Cestino</b>, da dove si può ripristinare.</td></tr>
   </table>
-  <p>Con <b>“Solo in classifica”</b> in alto a destra vedi solo chi ha già raggiunto la soglia, con le posizioni ricalcolate: è la classifica ufficiale.</p>
+  <div class="fig">
+    <img class="shot m" src="img/partite.png" alt="Schermata Partite">
+    <div class="cap">Il gruppo di un torneo (in oro) e una serata con due partite in esubero, barrate.</div>
+  </div>
+  <p>Dopo ogni correzione la classifica si ricalcola da sola, anche per le partite delle settimane precedenti.</p>
 </section>
 
 <!-- 5 -->
 <section class="page">
-  <h2><span class="n">5</span>Pubblicare ogni 2 settimane</h2>
-  <div class="two">
-    <div>
-      <ol class="steps">
-        <li><b>Apri “Pubblica”.</b> A sinistra vedi l'immagine esattamente come la vedranno nel gruppo.</li>
-        <li><b>Clicca “Copia immagine per WhatsApp”</b> e incollala nella chat del gruppo (Ctrl+V su WhatsApp Web o Desktop). In alternativa: testo per WhatsApp, PNG, PDF, Excel o CSV.</li>
-        <li><b>Clicca “Segna pubblicata”.</b> Da quel momento frecce e variazioni si calcolano rispetto a questa classifica, fino alla prossima.</li>
-      </ol>
-      <div class="note">
-        <span class="label">Nel gruppo</span>
-        L'immagine riporta il nome <b>Tornei e partite interne tennistavolo</b> ed è sempre su sfondo chiaro, anche se usi l'app col tema scuro.
-      </div>
-      <p>Una pubblicazione fatta per errore si toglie dalla stessa pagina, con “Elimina”. Il PDF va a capo pulito: nessuna parte viene spezzata tra due pagine.</p>
-    </div>
-    <div class="fig">
-      <img class="shot" src="img/export.png" alt="Immagine della classifica per WhatsApp" style="margin-top:0">
-      <div class="cap">L'immagine che arriva nel gruppo.</div>
-    </div>
+  <h2><span class="n">5</span>Gestire i giocatori</h2>
+  <h3 style="margin-top:0">Aggiungere un giocatore</h3>
+  <p>In <b>Giocatori</b> scrivi nome e cognome, controlla la data di ingresso e clicca <b>Aggiungi</b>. Parte da 1200 punti, anche a stagione in corso.</p>
+  <div class="fig">
+    <img class="shot m" src="img/giocatori.png" alt="Schermata Giocatori">
+    <div class="cap">L'elenco dei giocatori con punti, partite valide, partite escluse e stato.</div>
+  </div>
+  <h3>Rinominare</h3>
+  <p>Clicca il giocatore per aprire la sua scheda, poi <b>Rinomina</b>. Il nome cambia ovunque, anche nelle partite già registrate.</p>
+  <h3>Chi smette di giocare: inattivo</h3>
+  <p>Nella scheda del giocatore clicca <b>“Segna come inattivo”</b>. L'app mostra prima quali partite andranno in pausa; confermando:</p>
+  <ul>
+    <li>tutte le sue partite restano salvate ma <b>non contano più per nessuno</b>: né per chi è diventato inattivo, né per i suoi avversari;</li>
+    <li>i punti di tutti vengono ricalcolati come se quelle partite non ci fossero;</li>
+    <li>esce dalla classifica e non serve più affrontarlo per entrare in classifica ufficiale.</li>
+  </ul>
+  <p>Se torna, <b>“Riattiva”</b> rimette tutto com'era: le sue partite tornano a contare.</p>
+  <div class="note">
+    <span class="label">Eliminare un giocatore</span>
+    Si può eliminare solo un giocatore senza partite e non iscritto a tornei (per esempio un nome scritto male appena aggiunto). Per chi ha già giocato si usa “inattivo”.
   </div>
 </section>
 
 <!-- 6 -->
 <section class="page">
-  <h2><span class="n">6</span>I tornei</h2>
-  <p>In <b>Nuova partita</b> scegli <b>Torneo</b> in alto. Un torneo ha una data, un nome (facoltativo) e il suo K, di base 48. Può essere a <b>girone unico</b>, <b>girone unico + tabellone</b> o <b>più gironi + tabellone</b>.</p>
-  <ol class="steps">
-    <li><b>“Nuovo torneo”:</b> scegli il formato e metti ogni giocatore nel suo girone; per il tabellone scegli da che turno parte (semifinali, quarti, ottavi…) e se c'è la finale per il 3º posto.</li>
-    <li><b>Gironi:</b> scegli la fase (Girone A, Girone B…). Sotto “Da giocare” ci sono le coppie che mancano: un clic, il risultato, Salva. Ogni coppia gioca una volta sola, l'app non permette doppioni.</li>
-    <li><b>Tabellone:</b> quando i gironi sono finiti l'app lo compone da sola, prima i primi classificati, poi i secondi e così via, evitando al primo turno i compagni di girone. Se servono più posti dei giocatori, i migliori passano il turno con la <b>X</b>. Lo puoi sempre cambiare a mano da <b>“Imposta”</b>.</li>
-    <li><b>Turni ad eliminazione:</b> per ogni turno “Da giocare” mostra solo le partite in programma; i vincitori avanzano da soli.</li>
-  </ol>
-  <div class="fig">
-    <img class="shot" src="img/torneo.png" alt="Inserimento di una partita di torneo" style="width:84%">
-    <div class="cap">Girone con 4 partite giocate su 10: si sceglie la coppia, il risultato (al meglio dei 5 o dei 3) e, se si vuole, i punteggi dei set.</div>
+  <h2><span class="n">6</span>Leggere classifica e statistiche</h2>
+  <h3 style="margin-top:0">Classifica</h3>
+  <table>
+    <tr><th>Colonna</th><th>Significato</th></tr>
+    <tr><td># e frecce</td><td>Posizione e posti guadagnati (▲) o persi (▼) dall'ultima pubblicazione. “Nuovo” per chi non c'era.</td></tr>
+    <tr><td>Punti · Var.</td><td>Punteggio Elo attuale e differenza dall'ultima pubblicazione.</td></tr>
+    <tr><td>G · V · P · Set</td><td>Partite valide giocate, vinte, perse; set vinti–persi.</td></tr>
+    <tr><td>Ultime 5</td><td><span class="sq" style="background:#22A55B"></span> vinta &nbsp; <span class="sq" style="background:#E0443A"></span> persa, dalla più vecchia alla più recente.</td></tr>
+    <tr><td>Riga rossa sotto il nome</td><td>Quante partite mancano per entrare in classifica ufficiale; passando col mouse si vede con chi.</td></tr>
+  </table>
+  <p>In alto, <b>“Solo in classifica”</b> mostra solo chi ha raggiunto la soglia, con le posizioni ricalcolate: è la classifica ufficiale.</p>
+  <div class="two">
+    <div>
+      <h3>Scheda giocatore</h3>
+      <p>Si apre cliccando un nome. Mostra i numeri della stagione, il grafico dei punti e, per ogni avversario, quante partite valide ha fatto (la barra arriva a 8), quante ne mancano per il minimo e il bilancio. <b>“+2 torneo”</b> indica partite di torneo: danno punti ma non contano per minimo e massimo.</p>
+    </div>
+    <div>
+      <h3>Scontri diretti</h3>
+      <p>Una tabella di chi ha giocato con chi. <b>Bordo rosso</b>: meno di 2 partite, servono per la classifica ufficiale. <b>Casella chiara</b>: già 8 partite valide. Nelle caselle: vittorie di riga – vittorie di colonna. Più in basso, una seconda tabella raccoglie le <b>partite in esubero</b>.</p>
+    </div>
   </div>
-  <div class="note">
-    <span class="label">Per non sbagliare</span>
-    Una partita del tabellone non si può eliminare né cambiare di vincitore se il turno dopo è già stato giocato. Un torneo intero si elimina da “Imposta” (le partite vanno nel cestino, Ctrl+Z per tornare indietro); eliminando la sua ultima partita, se ne va anche il torneo.
+  <div class="two">
+    <div class="fig"><img class="shot" src="img/giocatore.png" alt="Scheda giocatore"></div>
+    <div class="fig"><img class="shot" src="img/matrice.png" alt="Scontri diretti"></div>
   </div>
-</section>
-
-<section class="page">
-  <h3 style="margin-top:0">Il tabellone e la X</h3>
-  <p>In “Imposta” si vedono gli accoppiamenti del primo turno, con accanto la posizione nel girone. Ogni posto può essere un giocatore, la X (l'avversario passa il turno) o “da decidere”. Con 10 giocatori, per esempio, si può partire dagli ottavi: 16 posti, 6 X, nessuno eliminato nei gironi.</p>
-  <div class="fig"><img class="shot" src="img/torneo-imposta.png" alt="Impostazione del tabellone" style="width:80%"></div>
-  <h3>Pubblicare il torneo</h3>
-  <p>In <b>Pubblica</b> scegli <b>Torneo</b> e il torneo: l'immagine contiene podio, partecipanti, classifica e risultati di ogni girone (con i set, se inseriti) e il tabellone. Come per la classifica: copia per WhatsApp, testo, PNG o PDF.</p>
-  <div class="fig"><img class="shot" src="img/pubblica-torneo.png" alt="Pubblicazione del riepilogo torneo" style="width:80%"></div>
 </section>
 
 <!-- 7 -->
 <section class="page">
-  <h2><span class="n">7</span>Le altre pagine</h2>
-  <h3>Scontri diretti</h3>
-  <p>Una tabella di chi ha giocato con chi. Le caselle con il bordo rosso sono le coppie che non hanno ancora le 2 partite minime: a colpo d'occhio sai chi far sfidare. Le caselle chiare sono le coppie che hanno già giocato le 8 partite valide. Più in basso, una seconda tabella raccoglie le <b>partite in esubero</b> (oltre l'8ª con lo stesso avversario), che restano salvate ma non contano.</p>
-  <div class="fig"><img class="shot" src="img/matrice.png" alt="Schermata Scontri diretti" style="width:62%"></div>
-  <h3>Partite</h3>
-  <p>Tutte le partite divise per serata; ogni torneo ha il suo gruppo, evidenziato in oro. Per ciascuna: <b>Modifica</b>, <b>Escludi / Includi</b> (per decidere a mano se conta) ed <b>Elimina</b>. Le partite eliminate finiscono nel <b>Cestino</b> e si possono ripristinare.</p>
-  <div class="fig"><img class="shot" src="img/partite.png" alt="Schermata Partite" style="width:62%"></div>
+  <h2><span class="n">7</span>I tornei</h2>
+  <p class="lead">Le partite di torneo contano per la classifica con un K più alto (di base 48) e non rientrano né nelle 8 per coppia né nelle 2 minime.</p>
+  <div class="two l">
+    <div>
+      <h3 style="margin-top:0">Creare un torneo</h3>
+      <ol class="steps">
+        <li>In <b>Nuova partita</b> scegli <b>“Torneo”</b> in alto, poi <b>“Nuovo torneo”</b>.</li>
+        <li>Nome (facoltativo), data e K.</li>
+        <li>Il formato: <b>girone unico</b>, <b>girone unico + tabellone</b>, <b>più gironi + tabellone</b> (oppure formato libero, solo un elenco di partite).</li>
+        <li>Metti ogni giocatore nel suo girone (A, B, …).</li>
+        <li>Per il tabellone: da che turno parte (finale, semifinali, quarti, ottavi…) e se c'è la finale per il 3º posto.</li>
+        <li><b>“Crea torneo”</b>.</li>
+      </ol>
+    </div>
+    <div class="fig">
+      <img class="shot" src="img/torneo-nuovo.png" alt="Impostazione di un torneo">
+      <div class="cap">Formato, gironi e tabellone.</div>
+    </div>
+  </div>
+  <h3>Modificare o eliminare un torneo</h3>
+  <p>Nome, data, K, gironi e tabellone si cambiano in qualsiasi momento da <b>“Imposta”</b> (quello che è già stato giocato resta bloccato). Con <b>“Elimina torneo”</b> il torneo sparisce dagli elenchi e le sue partite vanno nel cestino (escono dalla classifica). Si può annullare con <span class="key">Ctrl</span>+<span class="key">Z</span>, e ripristinando una sua partita dal cestino torna anche il torneo. Se elimini <b>l'ultima partita</b> di un torneo, l'app elimina anche il torneo (e te lo dice prima).</p>
 </section>
 
 <section class="page">
-  <h3 style="margin-top:0">Scheda giocatore</h3>
-  <p>Cliccando un nome: posizione, punti, andamento della stagione in un grafico, e per ogni avversario quante partite valide ha fatto, quante ne mancano e i punti guadagnati o persi (“+2 torneo” indica le partite di torneo, che danno punti ma non contano per minimo e massimo). Da qui si segna anche un giocatore come <b>inattivo</b> (e lo si riattiva se torna: tutte le sue partite tornano a contare).</p>
-  <div class="fig"><img class="shot" src="img/giocatore.png" alt="Scheda giocatore"></div>
-  <h3>Impostazioni</h3>
+  <h3 style="margin-top:0">Giocare i gironi</h3>
+  <ol class="steps">
+    <li>Scegli il torneo e la <b>fase</b> (Girone A, Girone B…). Accanto a ogni fase c'è quante partite sono state giocate su quelle previste.</li>
+    <li>Sotto <b>“Da giocare”</b> ci sono le coppie che mancano: clicca quella che ha giocato.</li>
+    <li>Clicca il risultato: al meglio dei 5 (3–0, 3–1, 3–2) o dei 3 (2–0, 2–1).</li>
+    <li>Se vuoi, scrivi i <b>punteggi dei set</b> (per esempio 11–8, 9–11…): finiranno nel riepilogo. Sono facoltativi, ma vanno scritti tutti o nessuno.</li>
+    <li><b>“Salva e continua”</b>. La coppia sparisce da “Da giocare”: ogni coppia gioca una volta sola nel girone.</li>
+  </ol>
+  <div class="fig">
+    <img class="shot" src="img/torneo.png" alt="Inserimento di una partita di torneo">
+    <div class="cap">Girone con 4 partite giocate su 10: coppia scelta, risultato 3–1 e punteggi dei set.</div>
+  </div>
+</section>
+
+<section class="page">
+  <h3 style="margin-top:0">Il tabellone</h3>
+  <p>Quando l'ultima partita dei gironi è salvata, l'app <b>compone da sola il primo turno</b> del tabellone:</p>
   <ul>
-    <li><b>Regolamento:</b> punti di partenza, K, K proposto per i nuovi tornei, massimo partite per coppia, soglia minima, giorni tra una pubblicazione e l'altra.</li>
-    <li><b>Aspetto:</b> tema scuro o chiaro, e grandezza dei testi (Piccola, Normale, Grande).</li>
-    <li><b>Dati:</b> “Esporta tutti i dati” crea un file da conservare o da portare su un altro PC; “Importa” lo unisce ai dati presenti senza doppioni. In futuro servirà anche per l'app sul telefono.</li>
-    <li><b>Backup:</b> l'app salva da sola una copia dei dati mentre la usi (ultime 30) e con un clic si torna a una copia precedente.</li>
+    <li>entrano prima tutti i primi classificati, poi i secondi e così via; a pari posizione, chi ha fatto meglio nel girone;</li>
+    <li>se il tabellone ha più posti dei giocatori, i migliori <b>passano il turno con la X</b>: per esempio 10 giocatori negli ottavi (16 posti) = 6 X, e nessuno viene eliminato nei gironi;</li>
+    <li>quando possibile, al primo turno non si affrontano due giocatori dello stesso girone.</li>
   </ul>
-  <h3>Installazione</h3>
-  <p>Si installa con il file <span class="mono">TennistavoloAmatori-Setup</span>, oppure si usa la versione <span class="mono">Portable</span> che parte senza installare nulla (anche da chiavetta). Al primo avvio Windows può mostrare “PC protetto da Windows”: si clicca <b>Ulteriori informazioni → Esegui comunque</b>. È normale per i programmi non distribuiti da un negozio.</p>
+  <p>Gli accoppiamenti si possono sempre <b>cambiare a mano</b> da <b>“Imposta”</b>: ogni posto può essere un giocatore, la X o “da decidere”. Da quel momento l'app non li tocca più; “Ricomponi dai gironi” li rifà automaticamente.</p>
+  <div class="two">
+    <div class="fig">
+      <img class="shot" src="img/torneo-imposta.png" alt="Accoppiamenti del tabellone">
+      <div class="cap">Quarti di finale: due giocatori passano con la X.</div>
+    </div>
+    <div>
+      <h3 style="margin-top:3mm">Giocare il tabellone</h3>
+      <ol class="steps">
+        <li>Scegli il turno (Quarto di finale, Semifinale, Finale 3º posto, Finale).</li>
+        <li>“Da giocare” mostra solo le partite in programma: cliccane una, poi risultato e Salva.</li>
+        <li>I vincitori passano al turno successivo da soli. Chi ha la X non ha partite da inserire.</li>
+      </ol>
+      <p>Se un turno non ha partite da giocare, l'app dice perché: turno completo, in attesa del turno precedente, oppure accoppiamenti da decidere.</p>
+    </div>
+  </div>
+  <div class="note">
+    <span class="label">Per non sbagliare</span>
+    Una partita del tabellone non si può eliminare né cambiare di vincitore se il turno dopo è già stato giocato: prima si elimina quella del turno successivo. Nel girone, chi ha già giocato non si può spostare in un altro girone.
+  </div>
 </section>
 
 <!-- 8 -->
 <section class="page">
-  <h2><span class="n">8</span>Scelte fatte</h2>
-  <p class="lead">Dove il regolamento non diceva tutto è stata fatta una scelta. Eccole, così sono chiare a tutti; si possono cambiare.</p>
-  <div class="q"><b>Le partite “in esubero” non vengono cancellate.</b><span>Restano salvate, barrate e con il motivo, ma non contano: se c'è un errore o una decisione diversa si recuperano, anche a mano con “Includi”.</span></div>
-  <div class="q"><b>Soglia minima e giocatori inattivi.</b><span>Per entrare in classifica ufficiale servono 2 partite con ciascun avversario ancora attivo. Gli inattivi non contano, altrimenti chi smette bloccherebbe tutti.</span></div>
-  <div class="q"><b>Frecce e variazioni.</b><span>Sono calcolate rispetto all'ultima classifica pubblicata, non rispetto alla serata precedente.</span></div>
-  <div class="q"><b>Classifica dei gironi.</b><span>Conta chi ha più vittorie; a parità contano gli scontri tra i pari merito (vittorie, poi differenza set, poi differenza punti), poi set e punti su tutto il girone.</span></div>
-  <div class="q"><b>Tornei e classifica Elo.</b><span>Le partite di torneo danno punti con il K del torneo, ma non occupano posti delle 8 per coppia e non valgono per le 2 minime.</span></div>
-  <div class="note" style="margin-top:7mm">
-    <span class="label">E poi</span>
-    Qualsiasi altra cosa: nomi, colori, pagine che non servono o che mancano. Si cambia facilmente.
+  <h2><span class="n">8</span>Pubblicare nel gruppo</h2>
+  <div class="two l">
+    <div>
+      <h3 style="margin-top:0">La classifica, ogni 2 settimane</h3>
+      <p>Quando è ora di pubblicare compare un pallino rosso su <b>Pubblica</b>.</p>
+      <ol class="steps">
+        <li>Apri <b>Pubblica</b> e lascia scelto <b>“Classifica”</b>. A sinistra vedi l'immagine come la vedranno nel gruppo.</li>
+        <li><b>“Copia immagine per WhatsApp”</b>, poi nella chat del gruppo incolla con <span class="key">Ctrl</span>+<span class="key">V</span> (WhatsApp Web o Desktop).</li>
+        <li><b>“Segna pubblicata”</b>: da quel momento frecce e variazioni si calcolano rispetto a questa classifica.</li>
+      </ol>
+      <p>In alternativa: <b>testo per WhatsApp</b>, oppure salva <b>PNG, PDF, Excel o CSV</b>. Una pubblicazione segnata per errore si toglie dall'elenco con <b>Elimina</b>.</p>
+    </div>
+    <div class="fig">
+      <img class="shot" src="img/export.png" alt="Immagine della classifica" style="margin-top:0">
+      <div class="cap">L'immagine che arriva nel gruppo: sempre chiara, con il nome Tornei e partite interne tennistavolo.</div>
+    </div>
   </div>
+  <h3>Il riepilogo di un torneo</h3>
+  <p>In <b>Pubblica</b> scegli <b>“Torneo”</b> e il torneo. L'immagine contiene podio, partecipanti, classifica e risultati di ogni girone (con i set, se inseriti) e il tabellone con le X. Stessi pulsanti: copia per WhatsApp, testo, PNG, PDF.</p>
+  <div class="fig">
+    <img class="shot s" src="img/pubblica-torneo.png" alt="Pubblicazione di un torneo">
+    <div class="cap">L'anteprima del riepilogo di un torneo.</div>
+  </div>
+  <p>Nel PDF nessuna parte viene spezzata a metà tra due pagine: un girone o il tabellone che non ci stanno ripartono dalla pagina successiva.</p>
+</section>
+
+<!-- 9 -->
+<section class="page">
+  <h2><span class="n">9</span>Impostazioni, dati e backup</h2>
+  <div class="fig">
+    <img class="shot" src="img/impostazioni.png" alt="Schermata Impostazioni">
+  </div>
+  <table>
+    <tr><td>Stagione e regolamento</td><td>Nome e date della stagione, punteggio di partenza, K, K proposto per i nuovi tornei, massimo partite per coppia, soglia per la classifica ufficiale, giorni tra le pubblicazioni. Cambiando un valore la classifica si ricalcola.</td></tr>
+    <tr><td>Aspetto</td><td>Tema scuro, chiaro o come Windows; grandezza dei testi. Valgono solo per questo PC.</td></tr>
+    <tr><td>Esporta tutti i dati</td><td>Crea un file <span class="mono">.amat</span> con tutto (giocatori, partite, tornei, pubblicazioni): da conservare o portare su un altro PC.</td></tr>
+    <tr><td>Importa e unisci</td><td>Aggiunge i dati di un file <span class="mono">.amat</span> a quelli presenti, senza doppioni: per ogni partita vince la versione modificata più di recente.</td></tr>
+    <tr><td>Backup</td><td>L'app salva da sola una copia dei dati almeno ogni 10 minuti di utilizzo (tiene le ultime 30). <b>“Crea backup ora”</b> ne fa una subito; <b>“Ripristina”</b> torna a una copia precedente.</td></tr>
+  </table>
+  <h3>Cambiare PC</h3>
+  <ol class="steps">
+    <li>Sul vecchio PC: Impostazioni → <b>“Esporta tutti i dati”</b>, e salva il file (per esempio su una chiavetta).</li>
+    <li>Sul nuovo PC: installa l'app e, al primo avvio, clicca <b>“Ho già un file dati…”</b> e scegli il file.</li>
+  </ol>
+  <h3>Aggiornare l'app</h3>
+  <p>Quando esce una nuova versione basta installarla sopra quella vecchia: i dati restano dove sono (nella cartella <span class="mono">%APPDATA%\Amatori</span>) e non vengono toccati.</p>
+</section>
+
+<!-- 10 -->
+<section class="page">
+  <h2><span class="n">10</span>Il regolamento applicato</h2>
+  <p>Le regole della stagione e come le applica l'app. Tutti i numeri si cambiano da <b>Impostazioni</b>.</p>
+  <table>
+    <tr><th>Regola</th><th>Cosa fa l'app</th></tr>
+    <tr><td>Si parte da 1200 punti</td><td>Tutti, anche chi entra a stagione in corso.</td></tr>
+    <tr><td>Punteggio Elo con K = 32</td><td>Chi batte un avversario più forte guadagna di più; chi perde con uno più debole perde di più. Tra due giocatori alla pari, chi vince prende 16 punti e l'altro li perde.</td></tr>
+    <tr><td>Al massimo 8 partite con lo stesso avversario</td><td>Dalla 9ª in poi la partita è registrata ma non conta (“esubero”). Resta visibile, barrata, e si può far contare a mano con “Includi”.</td></tr>
+    <tr><td>Classifica ufficiale: almeno 2 partite con ciascuno</td><td>Chi non ci arriva resta nella classifica dell'app con una riga rossa sotto il nome. Contano solo gli avversari attivi.</td></tr>
+    <tr><td>Chi smette di giocare</td><td>Segnato come inattivo: le sue partite vanno in pausa (salvate, ma non contano per nessuno) finché non viene riattivato.</td></tr>
+    <tr><td>Tornei</td><td>K proprio (di base 48); le partite di torneo non occupano posti delle 8 per coppia e non valgono per le 2 minime.</td></tr>
+    <tr><td>Classifica dei gironi</td><td>Vittorie; a parità, gli scontri tra i pari merito (vittorie, differenza set, differenza punti), poi set e punti su tutto il girone.</td></tr>
+    <tr><td>Casi particolari</td><td>Ogni partita si può includere o escludere a mano, scrivendo il motivo.</td></tr>
+    <tr><td>Pubblicazione ogni 2 settimane</td><td>Un pallino rosso su “Pubblica” ricorda quando è ora. Frecce e variazioni sono calcolate rispetto all'ultima classifica pubblicata.</td></tr>
+  </table>
+  <p>La classifica è sempre <b>ricalcolata da zero</b> ripercorrendo le partite in ordine di data: qualsiasi correzione, anche vecchia, aggiorna tutto in modo coerente.</p>
+</section>
+
+<!-- 11 -->
+<section class="page">
+  <h2><span class="n">11</span>Domande frequenti</h2>
+  <div class="faq"><b>Ho salvato una partita con il risultato sbagliato.</b><span>Se l'hai appena salvata: Ctrl+Z e reinseriscila. Altrimenti: Partite → Modifica sulla partita, correggi e salva.</span></div>
+  <div class="faq"><b>Ho inserito una partita nella data sbagliata.</b><span>Partite → Modifica → cambia la data. La classifica si ricalcola da sola nell'ordine giusto.</span></div>
+  <div class="faq"><b>Perché una partita è barrata e “non conta”?</b><span>Il motivo è scritto accanto: “esubero” (oltre l'8ª con lo stesso avversario), “in pausa” (un giocatore è inattivo) o “esclusa a mano”. Con “Includi” si può far contare comunque.</span></div>
+  <div class="faq"><b>Ho eliminato una partita per errore.</b><span>Partite → Cestino → Ripristina. Oppure Ctrl+Z subito dopo.</span></div>
+  <div class="faq"><b>Ho eliminato un torneo per errore.</b><span>Ctrl+Z subito dopo. Più tardi: Partite → Cestino → ripristina una sua partita, e il torneo torna.</span></div>
+  <div class="faq"><b>Nel torneo non riesco a inserire la finale (o un altro turno).</b><span>Nella fase scelta “Da giocare” dice il motivo: di solito manca ancora un risultato del turno precedente, oppure gli accoppiamenti del primo turno sono da decidere in “Imposta”.</span></div>
+  <div class="faq"><b>Il tabellone non si è composto da solo.</b><span>Succede solo quando tutti i gironi sono completi, e non se gli accoppiamenti erano già stati scelti a mano. In “Imposta” c'è “Componi dai gironi”.</span></div>
+  <div class="faq"><b>Un giocatore torna dopo essere stato inattivo.</b><span>Apri la sua scheda e clicca “Riattiva”: le sue partite tornano a contare.</span></div>
+  <div class="faq"><b>Nell'immagine per il gruppo manca qualcuno.</b><span>L'immagine mostra i giocatori attivi. Controlla in Giocatori che non sia segnato come inattivo.</span></div>
+  <div class="faq"><b>Windows non fa aprire l'app.</b><span>All'avviso “PC protetto da Windows” clicca Ulteriori informazioni → Esegui comunque (capitolo 1).</span></div>
+  <div class="faq"><b>Temo di perdere i dati.</b><span>L'app fa backup automatici (Impostazioni → Backup). Per sicurezza, ogni tanto usa “Esporta tutti i dati” e conserva il file su una chiavetta o nel cloud.</span></div>
 </section>
 
 </body>

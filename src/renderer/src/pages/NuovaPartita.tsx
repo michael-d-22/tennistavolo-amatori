@@ -107,6 +107,8 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
     setTourId(id)
     setPhase(undefined)
     clearPlayers()
+    // Cambiando torneo si riparte da capo: niente risultato o set rimasti dal torneo precedente.
+    pickScore(null)
   }
 
   function pickPhase(p: Phase) {

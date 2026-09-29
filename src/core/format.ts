@@ -1,5 +1,6 @@
 import type { Computed, Standing } from './standings'
-import type { AppData, Tournament } from './types'
+import type { TournamentSummary } from './tournament'
+import { BYE, type AppData, type Match, type Tournament } from './types'
 
 export function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-')
@@ -123,4 +124,69 @@ export function matchesCsv(data: AppData, c: Computed): string {
     ]
   })
   return '﻿' + [head, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n')
+}
+
+/** "11-7 9-11 11-5" dal punto di vista di A. */
+export function setScoresText(m: Match, sep = ' '): string {
+  return (m.setScores ?? []).map(([a, b]) => `${a}-${b}`).join(sep)
+}
+
+/** Riepilogo del torneo per il gruppo WhatsApp. */
+export function tournamentText(data: AppData, s: TournamentSummary): string {
+  const name = (id: string) => data.players.find((p) => p.id === id)?.name ?? '?'
+  const t = s.tournament
+  const result = (m: Match) => {
+    const sets = m.setScores?.length ? ` (${setScoresText(m, ', ')})` : ''
+    const aWon = m.setsA > m.setsB
+    const a = aWon ? `*${name(m.playerA)}*` : name(m.playerA)
+    const b = aWon ? name(m.playerB) : `*${name(m.playerB)}*`
+    return `${a} ${m.setsA}-${m.setsB} ${b}${sets}`
+  }
+  const lines: string[] = []
+  lines.push(`🏆 *${s.label.toUpperCase()}* 🏆`)
+  lines.push(`_Tornei e partite interne tennistavolo · ${formatDate(t.date)} · ${s.participants.length} partecipanti_`)
+  if (s.podium.first) {
+    lines.push('')
+    lines.push(`🥇 ${name(s.podium.first)}`)
+    if (s.podium.second) lines.push(`🥈 ${name(s.podium.second)}`)
+    for (const p of s.podium.third) lines.push(`🥉 ${name(p)}`)
+  }
+  for (const g of s.groups) {
+    lines.push('')
+    lines.push(`*${s.groups.length > 1 ? `GIRONE ${g.group.name}` : 'GIRONE'}*`)
+    for (const r of g.standings) lines.push(`${r.position}. ${name(r.playerId)} – ${r.wins}V ${r.losses}P · set ${r.setsWon}-${r.setsLost}`)
+    if (g.matches.length) {
+      lines.push('')
+      for (const m of g.matches) lines.push(result(m))
+    }
+  }
+  if (s.bracket.length) {
+    lines.push('')
+    lines.push('*TABELLONE*')
+    for (const r of s.bracket) {
+      const rows: string[] = []
+      for (const n of r.nodes) {
+        if (n.match) rows.push(result(n.match))
+        else if (n.a === BYE || n.b === BYE) {
+          const p = n.a === BYE ? n.b : n.a
+          if (p && p !== BYE) rows.push(`${name(p)} passa il turno (X)`)
+        }
+      }
+      if (!rows.length) continue
+      lines.push(`_${r.label}_`)
+      lines.push(...rows)
+    }
+    if (s.third?.match) {
+      lines.push('_Finale 3º posto_')
+      lines.push(result(s.third.match))
+    }
+  }
+  if (s.others.length) {
+    lines.push('')
+    lines.push('*RISULTATI*')
+    for (const m of s.others) lines.push(result(m))
+  }
+  lines.push('')
+  lines.push(`Partite giocate: ${s.matchCount}`)
+  return lines.join('\n')
 }

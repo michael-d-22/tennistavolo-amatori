@@ -46,19 +46,47 @@ for (let i = 0; i < 9; i++) {
   const t = new Date(Date.parse('2026-10-01T19:00:00Z') + i * 60000).toISOString()
   matches.push({ id: `c${i}`, date: '2026-10-01', playerA: 'p0', playerB: 'p1', setsA: 3, setsB: i % 3, createdAt: t, updatedAt: t })
 }
-// Un torneo con K 48: partite al meglio dei 5 e dei 3
-const tournament = { id: 't1', date: '2026-10-24', name: "Torneo d'autunno", k: 48, createdAt: t0, updatedAt: t0 }
+// Un torneo con K 48: due gironi, poi tabellone dalle semifinali con finale per il 3º posto.
+const tournament = {
+  id: 't1',
+  date: '2026-10-24',
+  name: "Torneo d'autunno",
+  k: 48,
+  format: 'groups-bracket',
+  groups: [
+    { id: 'gA', name: 'A', players: ['p0', 'p2', 'p4', 'p6'] },
+    { id: 'gB', name: 'B', players: ['p1', 'p3', 'p5'] }
+  ],
+  bracketRounds: 3,
+  draw: ['p0', 'X', 'p5', 'p2', 'p1', 'X', 'p3', 'p4'],
+  thirdPlace: true,
+  createdAt: t0,
+  updatedAt: t0
+}
+const gA = { type: 'group', group: 'gA' }
+const gB = { type: 'group', group: 'gB' }
 const tourGames = [
-  [0, 2, 3, 1],
-  [1, 3, 2, 0],
-  [4, 5, 1, 2],
-  [0, 1, 2, 1],
-  [2, 6, 3, 0],
-  [3, 4, 0, 3]
+  [0, 2, [[11, 7], [9, 11], [11, 5], [11, 8]], gA],
+  [4, 6, [[11, 9], [11, 6], [12, 10]], gA],
+  [0, 4, [[11, 4], [11, 8], [11, 9]], gA],
+  [2, 6, [[8, 11], [11, 7], [11, 9], [7, 11], [11, 6]], gA],
+  [0, 6, [[11, 3], [11, 5], [11, 7]], gA],
+  [2, 4, [[11, 9], [5, 11], [11, 8], [11, 13], [11, 9]], gA],
+  [1, 3, [[11, 6], [11, 8]], gB],
+  [3, 5, [[11, 9], [8, 11], [11, 7]], gB],
+  [1, 5, [[11, 5], [11, 9]], gB],
+  [2, 5, [[11, 6], [11, 9], [11, 7]], { type: 'bracket', round: 3, slot: 1 }],
+  [3, 4, [[11, 8], [9, 11], [11, 9], [11, 5]], { type: 'bracket', round: 3, slot: 3 }],
+  [0, 2, [[11, 8], [11, 6], [9, 11], [11, 7]], { type: 'bracket', round: 2, slot: 0 }],
+  [1, 3, [[11, 9], [13, 11], [11, 4]], { type: 'bracket', round: 2, slot: 1 }],
+  [3, 2, [[11, 7], [11, 9], [11, 8]], { type: 'third' }],
+  [0, 1, [[9, 11], [11, 6], [11, 9], [8, 11], [11, 7]], { type: 'bracket', round: 1, slot: 0 }]
 ]
-tourGames.forEach(([a, b, sa, sb], i) => {
+tourGames.forEach(([a, b, sets, stage], i) => {
   const t = new Date(Date.parse('2026-10-24T16:00:00Z') + i * 60000).toISOString()
-  matches.push({ id: `t${i}`, date: '2026-10-24', playerA: `p${a}`, playerB: `p${b}`, setsA: sa, setsB: sb, tournamentId: 't1', createdAt: t, updatedAt: t })
+  const setsA = sets.filter(([x, y]) => x > y).length
+  const setsB = sets.length - setsA
+  matches.push({ id: `t${i}`, date: '2026-10-24', playerA: `p${a}`, playerB: `p${b}`, setsA, setsB, tournamentId: 't1', stage, setScores: sets, createdAt: t, updatedAt: t })
 })
 const data = {
   schemaVersion: 2,
@@ -92,10 +120,17 @@ app.on('browser-window-created', (_e, win) => {
   hooked = true
   const [sw, sh] = (process.env.SNAP_SIZE || '1366x860').split('x').map(Number)
   win.setSize(sw, sh)
+  win.webContents.setBackgroundThrottling(false)
   win.webContents.once('did-finish-load', async () => {
     try {
       await wait(800)
       const js = (s) => win.webContents.executeJavaScript(s)
+      // Aspetta che l'export in corso finisca ("Preparazione in corso…" sparisce), al massimo 60 secondi.
+      const idle = async () => {
+        await wait(300)
+        for (let i = 0; i < 120 && (await js(`document.body.innerText.includes('Preparazione in corso')`)); i++) await wait(500)
+        await wait(300)
+      }
       const shot = async (name) => {
         const img = await win.webContents.capturePage()
         fs.writeFileSync(path.join(outDir, `${name}.png`), img.toPNG())
@@ -155,6 +190,19 @@ app.on('browser-window-created', (_e, win) => {
       await js(`document.querySelectorAll('.score-btn')[3].click()`)
       await wait(300)
       await shot('nuova-torneo')
+      // Finestra di impostazione con gli accoppiamenti del primo turno
+      await js(`[...document.querySelectorAll('.tour-bar button')].find(b=>b.textContent==='Imposta').click()`)
+      await wait(400)
+      await js(`document.querySelector('.modal-body').scrollTop = 10000`)
+      await wait(200)
+      await shot('torneo-imposta')
+      await js(`document.querySelector('.modal-head .icon-btn').click()`)
+      await wait(200)
+      // Fase a eliminazione diretta: le partite in programma e chi passa con la X
+      await js(`[...document.querySelectorAll('.stage-row .seg button')].find(b=>b.textContent.startsWith('Quarto'))?.click()`)
+      await wait(1000)
+      await shot('nuova-torneo-tabellone')
+      console.log('TABELLONE', await js(`[...document.querySelectorAll('.stage-row')].map(e=>e.innerText.replace(/\\n/g,' | ')).join(' || ')`))
       await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Partita singola').click()`)
       await wait(100)
       await pick(0, 1)
@@ -195,8 +243,18 @@ app.on('browser-window-created', (_e, win) => {
       await wait(300)
       for (const label of ['Salva PNG', 'Salva PDF', 'Excel', 'CSV classifica', 'CSV partite']) {
         await js(`[...document.querySelectorAll('.export-grid button')].find(b=>b.textContent.includes('${label}')).click()`)
-        await wait(2500)
+        await idle()
         console.log('EXPORT', label, await js(`document.querySelector('.toasts')?.innerText + ' | ' + document.querySelector('h1')?.innerText`))
+      }
+      // Riepilogo del torneo: anteprima e immagine esportata
+      await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Torneo').click()`)
+      await wait(600)
+      await shot('pubblica-torneo')
+      console.log('PUBBLICA TORNEO', await js(`document.querySelector('.publish-side, .empty')?.innerText.split('\\n').join(' | ')`))
+      for (const label of ['Salva PNG', 'Salva PDF']) {
+        await js(`[...document.querySelectorAll('.export-grid button')].find(b=>b.textContent.includes('${label}')).click()`)
+        await idle()
+        console.log('EXPORT torneo', label, await js(`document.querySelector('.toasts')?.innerText`))
       }
       const errs = await js(`document.body.innerText.length`)
       console.log('SNAP_OK', outDir, errs)

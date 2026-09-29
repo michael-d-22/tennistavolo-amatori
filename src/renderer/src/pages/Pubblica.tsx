@@ -1,12 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { daysBetween, formatLongDate, todayISO, whatsappText } from '@core/format'
+import { daysBetween, formatLongDate, todayISO, tournamentLabel, tournamentText, whatsappText } from '@core/format'
 import { deleteSnapshot, publishSnapshot } from '@core/mutations'
+import { tournamentSummary } from '@core/tournament'
 import { useStore } from '../store'
-import { Confirm, PageHead } from '../components/ui'
-import { CARD_WIDTH, copyPng, copyWhatsapp, rankingHtml, rankingStyle, saveCsv, savePdf, savePng, saveXlsx } from '../export'
+import { Confirm, Empty, PageHead } from '../components/ui'
+import {
+  CARD_WIDTH,
+  TOURNAMENT_CSS,
+  copyPng,
+  copyTournamentPng,
+  copyTournamentText,
+  copyWhatsapp,
+  rankingHtml,
+  rankingStyle,
+  saveCsv,
+  savePdf,
+  savePng,
+  saveTournamentPdf,
+  saveTournamentPng,
+  saveXlsx,
+  tournamentHtml
+} from '../export'
 
 export function PubblicaPage() {
   const { data, computed, update, toast } = useStore()
+  const [what, setWhat] = useState<'classifica' | 'torneo'>('classifica')
+  const tournaments = data.tournaments.filter((t) => !t.deleted).sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
+  const [tourId, setTourId] = useState(tournaments[0]?.id ?? '')
+  // Se il torneo scelto viene eliminato, si passa al più recente.
+  const tour = tournaments.find((t) => t.id === tourId) ?? tournaments[0]
+  const summary = useMemo(() => (tour ? tournamentSummary(data, tour) : null), [data, tour])
   const [date, setDate] = useState(todayISO())
   const [busy, setBusy] = useState<string | null>(null)
   const [tab, setTab] = useState<'grafica' | 'testo'>('grafica')
@@ -22,12 +45,19 @@ export function PubblicaPage() {
     const ro = new ResizeObserver(() => setZoom(Math.min(1, el.clientWidth / CARD_WIDTH)))
     ro.observe(el)
     return () => ro.disconnect()
-  }, [tab])
+  }, [tab, what, summary])
 
   const last = computed.lastSnapshot
   const daysSince = last ? daysBetween(last.date, todayISO()) : null
-  const html = useMemo(() => rankingHtml(data, computed, date), [data, computed, date])
-  const text = useMemo(() => whatsappText(data, computed, date), [data, computed, date])
+  const isTour = what === 'torneo'
+  const html = useMemo(
+    () => (isTour ? (summary ? tournamentHtml(data, summary) : '') : rankingHtml(data, computed, date)),
+    [data, computed, date, isTour, summary]
+  )
+  const text = useMemo(
+    () => (isTour ? (summary ? tournamentText(data, summary) : '') : whatsappText(data, computed, date)),
+    [data, computed, date, isTour, summary]
+  )
   const snapshots = data.snapshots.filter((s) => !s.deleted).sort((a, b) => (a.date < b.date ? 1 : -1))
 
   async function run(label: string, fn: () => Promise<unknown>, done: (r: unknown) => string | null) {
@@ -49,116 +79,217 @@ export function PubblicaPage() {
       <PageHead
         title="Pubblica"
         subtitle={
-          last
-            ? `Ultima pubblicazione il ${formatLongDate(last.date)} (${daysSince === 0 ? 'oggi' : daysSince === 1 ? 'ieri' : `${daysSince} giorni fa`}). Si pubblica ogni ${data.settings.publishEveryDays} giorni.`
-            : 'Nessuna classifica ancora pubblicata.'
+          isTour
+            ? 'Riepilogo di un torneo: partecipanti, gironi, tabellone e risultati set per set.'
+            : last
+              ? `Ultima pubblicazione il ${formatLongDate(last.date)} (${daysSince === 0 ? 'oggi' : daysSince === 1 ? 'ieri' : `${daysSince} giorni fa`}). Si pubblica ogni ${data.settings.publishEveryDays} giorni.`
+              : 'Nessuna classifica ancora pubblicata.'
         }
         actions={
-          <label className="field-stack">
-            <span className="label">Data classifica</span>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
-          </label>
+          <>
+            <div className="seg" role="group" aria-label="Cosa pubblicare">
+              <button className={!isTour ? 'active' : ''} aria-pressed={!isTour} onClick={() => setWhat('classifica')}>
+                Classifica
+              </button>
+              <button className={isTour ? 'active' : ''} aria-pressed={isTour} onClick={() => setWhat('torneo')}>
+                Torneo
+              </button>
+            </div>
+            {isTour ? (
+              <label className="field-stack">
+                <span className="label">Torneo</span>
+                <select value={tour?.id ?? ''} onChange={(e) => setTourId(e.target.value)}>
+                  {tournaments.length === 0 && <option value="">Nessun torneo</option>}
+                  {tournaments.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {tournamentLabel(t)}
+                      {t.name ? ` · ${formatLongDate(t.date)}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label className="field-stack">
+                <span className="label">Data classifica</span>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
+              </label>
+            )}
+          </>
         }
       />
 
-      <div className="publish-layout">
-        <section>
-          <div className="section-head">
-            <div className="seg" role="group" aria-label="Anteprima">
-              <button className={tab === 'grafica' ? 'active' : ''} aria-pressed={tab === 'grafica'} onClick={() => setTab('grafica')}>
-                Immagine
-              </button>
-              <button className={tab === 'testo' ? 'active' : ''} aria-pressed={tab === 'testo'} onClick={() => setTab('testo')}>
-                Testo WhatsApp
-              </button>
-            </div>
-            <span className="mono dim small">Così la vedono nel gruppo</span>
-          </div>
-          {tab === 'grafica' ? (
-            <div className="ranking-preview" ref={previewRef}>
-              <style>{rankingStyle()}</style>
-              <div style={{ zoom }} dangerouslySetInnerHTML={{ __html: html }} />
-            </div>
-          ) : (
-            <pre className="wa-text">{text}</pre>
-          )}
-        </section>
-
-        <aside className="publish-side">
+      {isTour && !summary ? (
+        <Empty>Nessun torneo registrato. Creane uno da Nuova partita → Torneo.</Empty>
+      ) : (
+        <div className="publish-layout">
           <section>
             <div className="section-head">
-              <h2>1 · Esporta</h2>
-            </div>
-            <div className="export-grid">
-              <button className="btn btn-red wide" disabled={!!busy} onClick={() => run('png', () => copyPng(data, computed, date), () => 'Immagine copiata: incollala su WhatsApp')}>
-                Copia immagine per WhatsApp
-              </button>
-              <button className="btn wide" disabled={!!busy} onClick={() => run('wa', () => copyWhatsapp(data, computed, date), () => 'Testo copiato negli appunti')}>
-                Copia testo WhatsApp
-              </button>
-              <button className="btn" disabled={!!busy} onClick={() => run('png-save', () => savePng(data, computed, date), saved)}>
-                Salva PNG
-              </button>
-              <button className="btn" disabled={!!busy} onClick={() => run('pdf', () => savePdf(data, computed, date), saved)}>
-                Salva PDF
-              </button>
-              <button className="btn wide" disabled={!!busy} onClick={() => run('xlsx', () => saveXlsx(data, computed, date), saved)}>
-                Excel (classifica e partite)
-              </button>
-              <button className="btn" disabled={!!busy} onClick={() => run('csv', () => saveCsv(data, computed, date, 'classifica'), saved)}>
-                CSV classifica
-              </button>
-              <button className="btn" disabled={!!busy} onClick={() => run('csv2', () => saveCsv(data, computed, date, 'partite'), saved)}>
-                CSV partite
-              </button>
-            </div>
-            {busy && <p className="dim small">Preparazione in corso…</p>}
-          </section>
-
-          <section>
-            <div className="section-head">
-              <h2>2 · Segna pubblicata</h2>
-            </div>
-            <p className="dim small">
-              Fissa la classifica di questa data: da qui in poi frecce e variazioni si calcolano rispetto a questa pubblicazione. Fallo
-              dopo aver esportato.
-            </p>
-            <button className="btn btn-primary" onClick={() => setConfirmPublish(true)}>
-              Segna pubblicata al {formatLongDate(date)}
-            </button>
-          </section>
-
-          {snapshots.length > 0 && (
-            <section>
-              <div className="section-head">
-                <h2>Pubblicazioni</h2>
+              <div className="seg" role="group" aria-label="Anteprima">
+                <button className={tab === 'grafica' ? 'active' : ''} aria-pressed={tab === 'grafica'} onClick={() => setTab('grafica')}>
+                  Immagine
+                </button>
+                <button className={tab === 'testo' ? 'active' : ''} aria-pressed={tab === 'testo'} onClick={() => setTab('testo')}>
+                  Testo WhatsApp
+                </button>
               </div>
-              <table className="table compact">
-                <tbody>
-                  {snapshots.map((s) => (
-                    <tr key={s.id}>
-                      <td>{formatLongDate(s.date)}</td>
-                      <td className="dim small">Primo: {s.rows.find((r) => r.position === 1)?.name ?? '—'}</td>
-                      <td className="actions">
-                        <button className="btn btn-ghost btn-sm danger" onClick={() => setDeleting(s.id)}>
-                          Elimina
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+              <span className="mono dim small">Così la vedono nel gruppo</span>
+            </div>
+            {tab === 'grafica' ? (
+              <div className="ranking-preview" ref={previewRef}>
+                <style>{isTour ? TOURNAMENT_CSS : rankingStyle()}</style>
+                <div style={{ zoom }} dangerouslySetInnerHTML={{ __html: html }} />
+              </div>
+            ) : (
+              <pre className="wa-text">{text}</pre>
+            )}
+          </section>
+
+          {isTour && summary ? (
+            <aside className="publish-side">
+              <section>
+                <div className="section-head">
+                  <h2>Esporta il torneo</h2>
+                </div>
+                <div className="export-grid">
+                  <button
+                    className="btn btn-red wide"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run(
+                        't-png',
+                        () => copyTournamentPng(data, summary),
+                        () => 'Immagine copiata: incollala su WhatsApp'
+                      )
+                    }
+                  >
+                    Copia immagine per WhatsApp
+                  </button>
+                  <button
+                    className="btn wide"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run(
+                        't-wa',
+                        () => copyTournamentText(data, summary),
+                        () => 'Testo copiato negli appunti'
+                      )
+                    }
+                  >
+                    Copia testo WhatsApp
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('t-png-save', () => saveTournamentPng(data, summary), saved)}>
+                    Salva PNG
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('t-pdf', () => saveTournamentPdf(data, summary), saved)}>
+                    Salva PDF
+                  </button>
+                </div>
+                {busy && <p className="dim small">Preparazione in corso…</p>}
+              </section>
+              <p className="dim small">
+                Gironi e tabellone si impostano da Nuova partita → Torneo → “Imposta”. I punteggi dei set compaiono se sono stati inseriti.
+              </p>
+            </aside>
+          ) : (
+            <aside className="publish-side">
+              <section>
+                <div className="section-head">
+                  <h2>1 · Esporta</h2>
+                </div>
+                <div className="export-grid">
+                  <button
+                    className="btn btn-red wide"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run(
+                        'png',
+                        () => copyPng(data, computed, date),
+                        () => 'Immagine copiata: incollala su WhatsApp'
+                      )
+                    }
+                  >
+                    Copia immagine per WhatsApp
+                  </button>
+                  <button
+                    className="btn wide"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run(
+                        'wa',
+                        () => copyWhatsapp(data, computed, date),
+                        () => 'Testo copiato negli appunti'
+                      )
+                    }
+                  >
+                    Copia testo WhatsApp
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('png-save', () => savePng(data, computed, date), saved)}>
+                    Salva PNG
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('pdf', () => savePdf(data, computed, date), saved)}>
+                    Salva PDF
+                  </button>
+                  <button className="btn wide" disabled={!!busy} onClick={() => run('xlsx', () => saveXlsx(data, computed, date), saved)}>
+                    Excel (classifica e partite)
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('csv', () => saveCsv(data, computed, date, 'classifica'), saved)}>
+                    CSV classifica
+                  </button>
+                  <button className="btn" disabled={!!busy} onClick={() => run('csv2', () => saveCsv(data, computed, date, 'partite'), saved)}>
+                    CSV partite
+                  </button>
+                </div>
+                {busy && <p className="dim small">Preparazione in corso…</p>}
+              </section>
+
+              <section>
+                <div className="section-head">
+                  <h2>2 · Segna pubblicata</h2>
+                </div>
+                <p className="dim small">
+                  Fissa la classifica di questa data: da qui in poi frecce e variazioni si calcolano rispetto a questa pubblicazione. Fallo dopo aver
+                  esportato.
+                </p>
+                <button className="btn btn-primary" onClick={() => setConfirmPublish(true)}>
+                  Segna pubblicata al {formatLongDate(date)}
+                </button>
+              </section>
+
+              {snapshots.length > 0 && (
+                <section>
+                  <div className="section-head">
+                    <h2>Pubblicazioni</h2>
+                  </div>
+                  <table className="table compact">
+                    <tbody>
+                      {snapshots.map((s) => (
+                        <tr key={s.id}>
+                          <td>{formatLongDate(s.date)}</td>
+                          <td className="dim small">Primo: {s.rows.find((r) => r.position === 1)?.name ?? '—'}</td>
+                          <td className="actions">
+                            <button className="btn btn-ghost btn-sm danger" onClick={() => setDeleting(s.id)}>
+                              Elimina
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
+              )}
+            </aside>
           )}
-        </aside>
-      </div>
+        </div>
+      )}
 
       {confirmPublish && (
         <Confirm
           title="Segnare la classifica come pubblicata?"
           message={<p>La classifica attuale verrà salvata con data {formatLongDate(date)} e diventerà il riferimento per le prossime variazioni.</p>}
           confirmLabel="Segna pubblicata"
-          onConfirm={() => update((d) => publishSnapshot(d, computed, date), 'pubblicazione', { history: false }) && toast('Classifica segnata come pubblicata')}
+          onConfirm={() =>
+            update((d) => publishSnapshot(d, computed, date), 'pubblicazione', { history: false }) && toast('Classifica segnata come pubblicata')
+          }
           onClose={() => setConfirmPublish(false)}
         />
       )}

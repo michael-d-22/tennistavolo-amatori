@@ -1606,7 +1606,7 @@ tr.tour.clickable:hover td {
 /* Barra "torneo" nell'inserimento */
 .tour-bar {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(200px, 2fr) 110px;
+  grid-template-columns: minmax(200px, 1.1fr) minmax(0, 1.4fr) auto;
   gap: 12px;
   align-items: end;
   padding: 14px 16px;
@@ -1660,4 +1660,161 @@ tr.tour.clickable:hover td {
 }
 .matrix-section + .matrix-section {
   margin-top: 36px;
+}
+.tour-bar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  min-width: 0;
+  color: var(--ink-2);
+}
+.tour-bar .row {
+  flex-wrap: nowrap;
+}
+.stage-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+.stage-row .seg button.active {
+  background: var(--tour-ink);
+  color: #1a1204;
+}
+.seg-wrap {
+  flex-wrap: wrap;
+}
+.seg-sm button {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+/* Punteggi dei singoli set */
+.set-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: -12px;
+}
+.set-grid {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.set-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.set-cell .bo-label {
+  margin-top: 0;
+}
+.set-pair {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.set-pair input {
+  width: 58px;
+  height: 44px;
+  padding: 0 6px;
+  text-align: center;
+  font-family: var(--cond);
+  font-size: 22px;
+  font-weight: 700;
+}
+.match-detail {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* Impostazione torneo: assegnazione ai gironi */
+.group-assign {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px 16px;
+  max-height: 320px;
+  overflow: auto;
+  padding: 4px 2px;
+}
+.group-assign-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  color: var(--ink-2);
+}
+.group-assign-row.on {
+  background: var(--tour-bg);
+  color: var(--ink);
+  font-weight: 500;
+}
+.group-assign-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+}
+.num-input {
+  width: 72px;
+  height: 36px;
+}
+.form-grid .check {
+  flex-direction: row;
+  align-self: center;
+}
+
+/* Accoppiamenti del tabellone e partite da giocare */
+.draw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 8px 20px;
+}
+.draw-pair {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.draw-pair select {
+  width: 100%;
+  height: 38px;
+  font-size: 13px;
+}
+.pair-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pair-chip {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--tour-rule);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+.pair-chip:hover {
+  border-color: var(--tour-ink);
+}
+.pair-chip.active {
+  background: var(--tour-ink);
+  border-color: var(--tour-ink);
+  color: #1a1204;
+}
+.seg-count {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  opacity: 0.75;
 }

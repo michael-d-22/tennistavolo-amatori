@@ -1,21 +1,16 @@
 import { toPng } from 'html-to-image'
-import { fmtDelta, formatDate, formatLongDate, matchesCsv, standingsCsv, tournamentLabel, whatsappText } from '@core/format'
-import type { Computed, Standing } from '@core/standings'
+import { fmtDelta, formatDate, formatLongDate, matchesCsv, standingsCsv, tournamentLabel, tournamentText, whatsappText } from '@core/format'
+import type { TournamentSummary } from '@core/tournament'
+import type { Computed } from '@core/standings'
 import type { AppData } from '@core/types'
 import { FONT_FACE_CSS, fontsReady } from '../fonts'
+import { CARD_WIDTH, INK, INK_2, INK_3, PAPER, RED, RED_INK, esc } from './palette'
+import { TOURNAMENT_CSS, tournamentHtml } from './tournament'
+
+export { CARD_WIDTH }
 
 // Un'unica grafica della classifica (quella vista da tutti nel gruppo), usata per PNG, PDF e anteprima.
 // Nome pubblico "Tornei e partite interne tennistavolo", niente logo: è sempre chiara, qualunque sia il tema dell'app.
-
-export const CARD_WIDTH = 1080
-
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
-
-const INK = '#131A45'
-const INK_2 = '#454B6B'
-const INK_3 = '#6B6F86'
-const RED = '#C8231A'
-const RED_INK = '#B8201A'
 
 const CARD_CSS = `
 .amr-card{width:${CARD_WIDTH}px;min-height:1350px;box-sizing:border-box;padding:72px 80px 64px;display:flex;flex-direction:column;
@@ -35,7 +30,6 @@ const CARD_CSS = `
 .amr-pos{font-family:'Barlow Condensed',sans-serif;font-weight:700;line-height:1;text-align:center}
 .amr-mv{font-family:'IBM Plex Mono',monospace;font-size:22px;text-align:center}
 .amr-name{font-weight:600;line-height:1.15}
-.amr-sub{font-size:19px;line-height:1.25;color:${RED_INK};margin-top:4px}
 .amr-pts{font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center}
 .amr-var{font-family:'IBM Plex Mono',monospace;font-size:24px;text-align:center}
 .amr-wl{font-family:'IBM Plex Mono',monospace;font-size:22px;text-align:center;color:${INK_2}}
@@ -46,17 +40,12 @@ const CARD_CSS = `
 .amr-foot span:last-child{text-align:right}
 `
 
-function missingText(s: Standing): string {
-  const n = s.missing.reduce((a, m) => a + m.missing, 0)
-  return `${n} ${n === 1 ? 'partita' : 'partite'} per entrare in classifica`
-}
-
 export function rankingHtml(data: AppData, c: Computed, date: string): string {
   const active = c.standings.filter((s) => s.player.status === 'active')
   const retired = c.standings.filter((s) => s.player.status === 'retired')
   // Con tanti giocatori le righe si stringono, così l'immagine resta leggibile su WhatsApp.
   const n = active.length
-  const size = n <= 8 ? { h: 108, name: 32, pos: 64, pts: 60 } : n <= 12 ? { h: 88, name: 28, pos: 52, pts: 50 } : { h: 72, name: 24, pos: 44, pts: 42 }
+  const size = n <= 8 ? { h: 108, name: 38, pos: 64, pts: 60 } : n <= 12 ? { h: 88, name: 33, pos: 52, pts: 50 } : { h: 72, name: 28, pos: 44, pts: 42 }
 
   const rows = active
     .map((s) => {
@@ -74,7 +63,7 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
       return `<div class="amr-row" style="height:${size.h}px">
         <span class="amr-pos" style="font-size:${size.pos}px${pos === 1 ? `;color:${RED}` : ''}">${pos}</span>
         <span class="amr-mv">${mv}</span>
-        <div><div class="amr-name" style="font-size:${size.name}px">${esc(s.player.name)}</div>${s.qualified ? '' : `<div class="amr-sub">${missingText(s)}</div>`}</div>
+        <div class="amr-name" style="font-size:${size.name}px">${esc(s.player.name)}</div>
         <span class="amr-pts" style="font-size:${size.pts}px">${Math.round(s.rating)}</span>
         <span class="amr-var">${dHtml}</span>
         <span class="amr-wl">${s.wins}–${s.losses}</span>
@@ -109,20 +98,41 @@ function fileDate(date: string) {
   return date.replace(/-/g, '')
 }
 
-export async function renderPng(data: AppData, c: Computed, date: string): Promise<string> {
+/** Disegna fuori schermo una grafica (CSS + HTML della carta) e la restituisce come PNG. */
+async function renderCardPng(css: string, html: string): Promise<string> {
   await fontsReady()
   const host = document.createElement('div')
   host.style.cssText = 'position:fixed;left:-20000px;top:0;'
-  host.innerHTML = `<style>${CARD_CSS}</style>${rankingHtml(data, c, date)}`
+  host.innerHTML = `<style>${css}</style>${html}`
   document.body.appendChild(host)
   try {
-    const node = host.querySelector('.amr-card') as HTMLElement
+    const node = host.lastElementChild as HTMLElement
     // Doppia risoluzione (2160px di larghezza): WhatsApp ricomprime le immagini, partire più nitidi
     // mantiene leggibili i numeri piccoli anche dopo la compressione.
-    return await toPng(node, { pixelRatio: 2, backgroundColor: '#F5F2EB', fontEmbedCSS: FONT_FACE_CSS })
+    return await toPng(node, { pixelRatio: 2, backgroundColor: PAPER, fontEmbedCSS: FONT_FACE_CSS })
   } finally {
     host.remove()
   }
+}
+
+/** PDF A4: la grafica è larga 1080px e la si rimpicciolisce per farla stare nella pagina. */
+function cardPdfHtml(css: string, cardClass: string, html: string): string {
+  // Nel PDF la carta diventa un normale blocco (i salti pagina non funzionano dentro flex) e nessuna sezione
+  // viene spezzata tra due pagine: se non ci sta, parte dalla pagina successiva.
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    ${FONT_FACE_CSS}
+    body{margin:0;background:${PAPER};-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    ${css}
+    .${cardClass}{zoom:.66;min-height:0;display:block;padding-top:48px;padding-bottom:48px}
+    .${cardClass} > *{break-inside:avoid;page-break-inside:avoid}
+    .amt-card > *{margin-bottom:52px}
+    .amt-card > footer{margin-bottom:0}
+    .amr-row,.amt-res,.amt-table tr,.amt-box{break-inside:avoid;page-break-inside:avoid}
+  </style></head><body>${html}</body></html>`
+}
+
+export async function renderPng(data: AppData, c: Computed, date: string): Promise<string> {
+  return renderCardPng(CARD_CSS, rankingHtml(data, c, date))
 }
 
 export async function savePng(data: AppData, c: Computed, date: string) {
@@ -140,15 +150,46 @@ export async function copyPng(data: AppData, c: Computed, date: string) {
 }
 
 export async function savePdf(data: AppData, c: Computed, date: string) {
-  // La grafica è larga 1080px: nel PDF A4 la si rimpicciolisce per farla stare nella pagina.
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-    ${FONT_FACE_CSS}
-    body{margin:0;background:#F5F2EB}
-    ${CARD_CSS}
-    .amr-card{zoom:.66;min-height:0}
-  </style></head><body>${rankingHtml(data, c, date)}</body></html>`
+  const html = cardPdfHtml(CARD_CSS, 'amr-card', rankingHtml(data, c, date))
   return window.api.pdfFromHtml({ html, defaultName: `classifica-amatori-${fileDate(date)}.pdf` })
 }
+
+// ---------- Riepilogo torneo ----------
+
+function tournamentFileName(s: TournamentSummary, ext: string) {
+  const slug = s.label
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  return `${slug || 'torneo'}-${fileDate(s.tournament.date)}.${ext}`
+}
+
+export async function copyTournamentPng(data: AppData, s: TournamentSummary) {
+  await window.api.copyImage(await renderCardPng(TOURNAMENT_CSS, tournamentHtml(data, s)))
+}
+
+export async function saveTournamentPng(data: AppData, s: TournamentSummary) {
+  const url = await renderCardPng(TOURNAMENT_CSS, tournamentHtml(data, s))
+  return window.api.saveFile({
+    defaultName: tournamentFileName(s, 'png'),
+    filters: [{ name: 'Immagine PNG', extensions: ['png'] }],
+    content: url.split(',')[1],
+    encoding: 'base64'
+  })
+}
+
+export async function saveTournamentPdf(data: AppData, s: TournamentSummary) {
+  const html = cardPdfHtml(TOURNAMENT_CSS, 'amt-card', tournamentHtml(data, s))
+  return window.api.pdfFromHtml({ html, defaultName: tournamentFileName(s, 'pdf') })
+}
+
+export async function copyTournamentText(data: AppData, s: TournamentSummary) {
+  await window.api.copyText(tournamentText(data, s))
+}
+
+export { TOURNAMENT_CSS, tournamentHtml }
 
 export async function saveCsv(data: AppData, c: Computed, date: string, kind: 'classifica' | 'partite') {
   return window.api.saveFile({

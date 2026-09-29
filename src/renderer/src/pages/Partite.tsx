@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
-import { fmtDelta, formatDate, formatLongDate, tournamentLabel } from '@core/format'
-import { deleteMatch, restoreMatch, setMatchOverride, updateMatch, updateTournament } from '@core/mutations'
+import { fmtDelta, formatDate, formatLongDate, setScoresText, tournamentLabel } from '@core/format'
+import { deleteMatch, restoreMatch, setMatchOverride, updateMatch } from '@core/mutations'
+import { hasGroups, stageLabel } from '@core/tournament'
 import { isValidScore } from '@core/rules'
 import type { MatchResult } from '@core/standings'
 import type { Match, OverrideMode, Tournament } from '@core/types'
 import { useStore } from '../store'
 import { Confirm, Empty, Modal, PageHead } from '../components/ui'
 import { IconNote } from '../components/icons'
+import { TournamentSetup } from '../components/TournamentSetup'
 import type { Navigate } from '../App'
 
 export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlayer?: string }) {
@@ -19,6 +21,9 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
   const [editingTour, setEditingTour] = useState<Tournament | null>(null)
 
   const tournaments = new Map(data.tournaments.map((t) => [t.id, t]))
+  // Eliminando l'ultima partita di un torneo si elimina anche il torneo: lo si dice prima.
+  const lastOfTournament = (m: Match) =>
+    !!m.tournamentId && !data.matches.some((x) => !x.deleted && x.id !== m.id && x.tournamentId === m.tournamentId)
   const nameOf = (id: string) => data.players.find((p) => p.id === id)?.name ?? '?'
   const players = data.players.filter((p) => !p.deleted).sort((a, b) => a.name.localeCompare(b.name, 'it'))
 
@@ -94,7 +99,7 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
                 {tour && (
                   <span className="actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => setEditingTour(tour)}>
-                      Modifica torneo
+                      Imposta torneo
                     </button>
                   </span>
                 )}
@@ -118,7 +123,14 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
                       <td className="score">
                         {m.setsA}–{m.setsB}
                       </td>
-                      <td className={!aWon ? 'winner' : ''}>{nameOf(m.playerB)}</td>
+                      <td className={!aWon ? 'winner' : ''}>
+                        {nameOf(m.playerB)}
+                        {(m.stage || m.setScores) && (
+                          <span className="match-detail">
+                            {[stageLabel(tour, m.stage), m.setScores && setScoresText(m)].filter(Boolean).join(' · ')}
+                          </span>
+                        )}
+                      </td>
                       <td className="num mono small dim">
                         {r.eval.counted ? (
                           <span title={`${nameOf(m.playerA)} ${fmtDelta(r.deltaA, 1)} · ${nameOf(m.playerB)} ${fmtDelta(-r.deltaA, 1)}`}>
@@ -179,7 +191,7 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
       )}
 
       {editing && <MatchEditor match={editing} onClose={() => setEditing(null)} />}
-      {editingTour && <TournamentEditor tournament={editingTour} onClose={() => setEditingTour(null)} />}
+      {editingTour && <TournamentSetup tournament={editingTour} onClose={() => setEditingTour(null)} />}
       {overriding && <OverrideEditor result={overriding} onClose={() => setOverriding(null)} />}
       {deleting && (
         <Confirm
@@ -190,11 +202,20 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
               <br />
               La partita finisce nel cestino e può essere ripristinata. Se vuoi solo che non conti per la classifica, usa
               “Escludi”.
+              {lastOfTournament(deleting) && (
+                <>
+                  <br />
+                  <strong>È l'ultima partita del torneo: verrà eliminato anche il torneo.</strong>
+                </>
+              )}
             </p>
           }
           confirmLabel="Elimina"
           danger
-          onConfirm={() => update((d) => deleteMatch(d, deleting.id), 'eliminazione partita') && toast('Partita eliminata')}
+          onConfirm={() =>
+            update((d) => deleteMatch(d, deleting.id), 'eliminazione partita') &&
+            toast(lastOfTournament(deleting) ? 'Partita eliminata, e con lei il torneo (Ctrl+Z per annullare)' : 'Partita eliminata')
+          }
           onClose={() => setDeleting(null)}
         />
       )}
@@ -210,12 +231,31 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
   const [sa, setSa] = useState(match.setsA)
   const [sb, setSb] = useState(match.setsB)
   const [note, setNote] = useState(match.note ?? '')
+  const [setsText, setSetsText] = useState(match.setScores ? setScoresText(match) : '')
   const players = data.players.filter((p) => !p.deleted).sort((x, y) => x.name.localeCompare(y.name, 'it'))
   const tour = match.tournamentId ? data.tournaments.find((t) => t.id === match.tournamentId) : undefined
+  // Nei tornei con gironi o tabellone giocatori e fase sono fissi: per cambiarli si elimina e si reinserisce.
+  const locked = !!tour && hasGroups(tour)
   const valid = a && b && a !== b && isValidScore(sa, sb, !!tour)
 
   function save() {
-    if (update((d) => updateMatch(d, match.id, { date, playerA: a, playerB: b, setsA: sa, setsB: sb, note }), 'modifica partita')) {
+    // "11-7 9-11 11-5": coppie di punti separate da spazi o virgole.
+    const parts = setsText.split(/[\s,;]+/).filter(Boolean)
+    const setScores = parts.map((p) => p.split('-').map(Number) as [number, number])
+    if (setScores.some((s) => s.length !== 2 || s.some((n) => Number.isNaN(n)))) {
+      toast('Punteggi dei set: scrivili come 11-7 9-11 11-5', 'error')
+      return
+    }
+    const draft = {
+      date,
+      playerA: a,
+      playerB: b,
+      setsA: sa,
+      setsB: sb,
+      note,
+      setScores
+    }
+    if (update((d) => updateMatch(d, match.id, draft), 'modifica partita')) {
       toast('Partita aggiornata, classifica ricalcolata')
       onClose()
     }
@@ -240,7 +280,7 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
         <label>
           Data
           <input type="date" value={date} disabled={!!tour} onChange={(e) => setDate(e.target.value)} />
-          {tour && <small className="muted">La data si cambia da “Modifica torneo”</small>}
+          {tour && <small className="muted">La data si cambia da “Imposta torneo”</small>}
         </label>
         {tour ? (
           <label>
@@ -250,9 +290,16 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
         ) : (
           <span />
         )}
+        {locked && (
+          <label className="span2">
+            Fase
+            <input value={stageLabel(tour, match.stage) || '—'} disabled />
+            <small className="muted">Giocatori e fase non si cambiano: per correggerli elimina la partita e reinseriscila</small>
+          </label>
+        )}
         <label>
           Giocatore 1
-          <select value={a} onChange={(e) => setA(e.target.value)}>
+          <select value={a} disabled={locked} onChange={(e) => setA(e.target.value)}>
             {players.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -262,7 +309,7 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
         </label>
         <label>
           Giocatore 2
-          <select value={b} onChange={(e) => setB(e.target.value)}>
+          <select value={b} disabled={locked} onChange={(e) => setB(e.target.value)}>
             {players.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -278,6 +325,13 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
           Set giocatore 2
           <input type="number" min={0} max={3} value={sb} onChange={(e) => setSb(Number(e.target.value))} />
         </label>
+        {tour && (
+          <label className="span2">
+            Punteggi dei set (facoltativi)
+            <input value={setsText} placeholder="es. 11-7 9-11 11-5" onChange={(e) => setSetsText(e.target.value)} />
+            <small className="muted">Dal punto di vista del giocatore 1</small>
+          </label>
+        )}
         <label className="span2">
           Note
           <input value={note} onChange={(e) => setNote(e.target.value)} />
@@ -286,53 +340,6 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
       {!valid && (
         <p className="neg small">Controlla giocatori e risultato ({tour ? '3-0, 3-1, 3-2 oppure 2-0, 2-1' : '3-0, 3-1 o 3-2'}).</p>
       )}
-    </Modal>
-  )
-}
-
-function TournamentEditor({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
-  const { update, toast } = useStore()
-  const [date, setDate] = useState(tournament.date)
-  const [name, setName] = useState(tournament.name ?? '')
-  const [k, setK] = useState(tournament.k)
-
-  function save() {
-    if (update((d) => updateTournament(d, tournament.id, { date, name, k }), 'modifica torneo')) {
-      toast('Torneo aggiornato, classifica ricalcolata')
-      onClose()
-    }
-  }
-
-  return (
-    <Modal
-      title="Modifica torneo"
-      onClose={onClose}
-      footer={
-        <>
-          <button className="btn btn-ghost" onClick={onClose}>
-            Annulla
-          </button>
-          <button className="btn btn-primary" disabled={!date || !(k > 0)} onClick={save}>
-            Salva
-          </button>
-        </>
-      }
-    >
-      <div className="form-grid">
-        <label className="span2">
-          Nome (facoltativo)
-          <input value={name} placeholder={tournamentLabel({ date })} onChange={(e) => setName(e.target.value)} autoFocus />
-        </label>
-        <label>
-          Data
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </label>
-        <label>
-          Fattore K
-          <input type="number" min={1} value={k} onChange={(e) => setK(Math.max(0, Number(e.target.value) || 0))} />
-        </label>
-      </div>
-      <p className="muted small">Data e K valgono per tutte le partite del torneo: la classifica viene ricalcolata.</p>
     </Modal>
   )
 }

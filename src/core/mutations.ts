@@ -1,5 +1,26 @@
 import { isValidScore } from './rules'
-import type { AppData, Match, MatchOverride, Player, Settings, Season, Snapshot, Tournament } from './types'
+import {
+  MAX_BRACKET_ROUNDS,
+  dependentMatch,
+  hasGroups,
+  setScoresError,
+  syncAutoDraw,
+  tournamentMatchError,
+  tournamentStructureError
+} from './tournament'
+import type {
+  AppData,
+  Match,
+  MatchOverride,
+  MatchStage,
+  Player,
+  Settings,
+  Season,
+  Snapshot,
+  Tournament,
+  TournamentFormat,
+  TournamentGroup
+} from './types'
 import type { Computed } from './standings'
 
 // Operazioni sui dati: funzioni pure che restituiscono una nuova copia di AppData.
@@ -41,6 +62,9 @@ export function deletePlayer(data: AppData, id: string): AppData {
   if (data.matches.some((m) => !m.deleted && (m.playerA === id || m.playerB === id))) {
     throw new Error('Il giocatore ha partite registrate: segnalo come inattivo invece di eliminarlo')
   }
+  if (data.tournaments.some((t) => !t.deleted && (t.groups?.some((g) => g.players.includes(id)) || t.draw?.includes(id)))) {
+    throw new Error('Il giocatore è iscritto a un torneo: toglilo prima dal torneo')
+  }
   return updatePlayer(data, id, { deleted: true })
 }
 
@@ -52,6 +76,8 @@ export interface MatchDraft {
   setsB: number
   note?: string
   tournamentId?: string
+  stage?: MatchStage
+  setScores?: [number, number][]
 }
 
 function tournamentOf(data: AppData, id: string | undefined): Tournament | undefined {
@@ -61,8 +87,11 @@ function tournamentOf(data: AppData, id: string | undefined): Tournament | undef
   return t
 }
 
-/** Valida la partita; quelle di torneo prendono sempre la data del torneo. */
-function validateDraft(data: AppData, d: MatchDraft): MatchDraft {
+/**
+ * Valida la partita; quelle di torneo prendono sempre la data del torneo e devono rispettarne
+ * la struttura. `excludeId` è la partita che si sta modificando o ripristinando.
+ */
+function validateDraft(data: AppData, d: MatchDraft, excludeId?: string): MatchDraft {
   if (!d.playerA || !d.playerB) throw new Error('Seleziona entrambi i giocatori')
   if (d.playerA === d.playerB) throw new Error('Un giocatore non può sfidare se stesso')
   const t = tournamentOf(data, d.tournamentId)
@@ -71,57 +100,169 @@ function validateDraft(data: AppData, d: MatchDraft): MatchDraft {
   }
   const date = t ? t.date : d.date
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data non valida')
-  return { ...d, date, tournamentId: t?.id, note: d.note?.trim() || undefined }
+  if (t) {
+    const err = tournamentMatchError(data, t, d, excludeId)
+    if (err) throw new Error(err)
+  }
+  const setScores = d.setScores?.length ? d.setScores : undefined
+  if (setScores) {
+    const err = setScoresError(d.setsA, d.setsB, setScores)
+    if (err) throw new Error(err)
+  }
+  return {
+    ...d,
+    date,
+    tournamentId: t?.id,
+    stage: t && hasGroups(t) ? d.stage : undefined,
+    setScores,
+    note: d.note?.trim() || undefined
+  }
+}
+
+/**
+ * Dopo ogni modifica alle partite di un torneo: se non gli resta nessuna partita lo elimina,
+ * altrimenti tiene aggiornato il tabellone composto in automatico dai gironi.
+ */
+function syncTournament(data: AppData, tournamentId: string | undefined, dropIfEmpty = false): AppData {
+  const t = tournamentId ? data.tournaments.find((x) => x.id === tournamentId && !x.deleted) : undefined
+  if (!t) return data
+  const now = nowISO()
+  if (dropIfEmpty && !data.matches.some((m) => !m.deleted && m.tournamentId === t.id)) {
+    return { ...data, tournaments: data.tournaments.map((x) => (x.id === t.id ? { ...x, deleted: true, updatedAt: now } : x)) }
+  }
+  const next = syncAutoDraw(data, t)
+  if (next === t) return data
+  return { ...data, tournaments: data.tournaments.map((x) => (x.id === t.id ? { ...next, updatedAt: now } : x)) }
 }
 
 export function addMatch(data: AppData, d: MatchDraft): { data: AppData; id: string } {
   const clean = validateDraft(data, d)
   const t = nowISO()
   const m: Match = { id: newId(), ...clean, createdAt: t, updatedAt: t }
-  return { data: { ...data, matches: [...data.matches, m] }, id: m.id }
+  return { data: syncTournament({ ...data, matches: [...data.matches, m] }, m.tournamentId), id: m.id }
 }
 
-/** Modifica i dati di una partita. Il torneo di appartenenza non cambia. */
+function winnerId(m: Pick<Match, 'playerA' | 'playerB' | 'setsA' | 'setsB'>) {
+  return m.setsA > m.setsB ? m.playerA : m.playerB
+}
+
+/**
+ * Modifica i dati di una partita. Il torneo non cambia; nei tornei con gironi o tabellone
+ * restano fissi anche fase e giocatori (si correggono risultato, set e note).
+ */
 export function updateMatch(data: AppData, id: string, d: MatchDraft): AppData {
   const current = data.matches.find((m) => m.id === id)
-  const clean = validateDraft(data, { ...d, tournamentId: current?.tournamentId })
-  return {
-    ...data,
-    matches: data.matches.map((m) => (m.id === id ? { ...m, ...clean, updatedAt: nowISO() } : m))
+  if (!current) throw new Error('Partita non trovata')
+  const t = current.tournamentId ? tournamentOf(data, current.tournamentId) : undefined
+  const locked = !!t && hasGroups(t)
+  const draft: MatchDraft = {
+    ...d,
+    tournamentId: current.tournamentId,
+    playerA: locked ? current.playerA : d.playerA,
+    playerB: locked ? current.playerB : d.playerB,
+    stage: locked ? current.stage : undefined,
+    setScores: 'setScores' in d ? d.setScores : current.setScores
   }
+  const clean = validateDraft(data, draft, id)
+  if (t && winnerId(clean) !== winnerId(current)) {
+    const dep = dependentMatch(data, t, current)
+    if (dep) throw new Error('Il vincitore di questa partita ha già giocato il turno successivo: elimina prima quella partita')
+  }
+  return syncTournament(
+    {
+      ...data,
+      matches: data.matches.map((m) => (m.id === id ? { ...m, ...clean, updatedAt: nowISO() } : m))
+    },
+    current.tournamentId
+  )
 }
 
 export interface TournamentDraft {
   date: string
   name?: string
   k: number
+  format?: TournamentFormat
+  groups?: TournamentGroup[]
+  bracketRounds?: number
+  thirdPlace?: boolean
+  draw?: (string | null)[]
+  drawAuto?: boolean
 }
 
-function validateTournament(d: TournamentDraft): TournamentDraft {
+function validateTournament(data: AppData, d: TournamentDraft, old?: Tournament): TournamentDraft {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) throw new Error('Data del torneo non valida')
   if (!(d.k > 0)) throw new Error('Il fattore K del torneo deve essere maggiore di zero')
-  return { date: d.date, name: d.name?.trim() || undefined, k: d.k }
+  const format = d.format ?? 'free'
+  const base = { date: d.date, name: d.name?.trim() || undefined, k: d.k, format }
+  const none = { groups: undefined, bracketRounds: undefined, thirdPlace: undefined, draw: undefined, drawAuto: undefined }
+  let clean: TournamentDraft
+  if (format === 'free') {
+    clean = { ...base, ...none }
+  } else {
+    const groups = (d.groups ?? []).map((g) => ({ ...g, players: [...new Set(g.players)] }))
+    if (format === 'groups-bracket' ? groups.length < 2 : groups.length !== 1) {
+      throw new Error(format === 'groups-bracket' ? 'Servono almeno due gironi' : 'Il formato prevede un solo girone')
+    }
+    const seen = new Set<string>()
+    const exists = new Set(data.players.filter((p) => !p.deleted).map((p) => p.id))
+    for (const g of groups) {
+      if (g.players.length < 2) throw new Error(`Il girone ${g.name} deve avere almeno due giocatori`)
+      for (const p of g.players) {
+        if (!exists.has(p)) throw new Error('Giocatore non trovato')
+        if (seen.has(p)) throw new Error('Un giocatore può stare in un solo girone')
+        seen.add(p)
+      }
+    }
+    if (format === 'group') {
+      clean = { ...base, ...none, groups }
+    } else {
+      const rounds = d.bracketRounds ?? 1
+      if (!Number.isInteger(rounds) || rounds < 1 || rounds > MAX_BRACKET_ROUNDS) throw new Error('Turno iniziale del tabellone non valido')
+      const size = 2 ** rounds
+      const draw = Array.from({ length: size }, (_, i) => d.draw?.[i] ?? null)
+      clean = { ...base, groups, bracketRounds: rounds, thirdPlace: rounds >= 2 && !!d.thirdPlace, draw, drawAuto: !!d.drawAuto }
+    }
+  }
+  const probe: Tournament = { ...(old ?? { id: '', createdAt: '', updatedAt: '' }), ...clean } as Tournament
+  const err = tournamentStructureError(data, probe, old)
+  if (err) throw new Error(err)
+  return clean
 }
 
 export function addTournament(data: AppData, d: TournamentDraft): { data: AppData; id: string } {
   const t = nowISO()
-  const tour: Tournament = { id: newId(), ...validateTournament(d), createdAt: t, updatedAt: t }
+  const tour: Tournament = { id: newId(), ...validateTournament(data, d), createdAt: t, updatedAt: t }
   return { data: { ...data, tournaments: [...data.tournaments, tour] }, id: tour.id }
 }
 
-/** Aggiorna nome, data e K del torneo; se cambia la data, la cambia anche a tutte le sue partite. */
-export function updateTournament(data: AppData, id: string, d: TournamentDraft): AppData {
-  const clean = validateTournament(d)
+/** Elimina un torneo senza partite (quelle eliminate restano nel cestino, senza torneo). */
+export function deleteTournament(data: AppData, id: string): AppData {
   const t = nowISO()
-  const old = data.tournaments.find((x) => x.id === id)
   return {
     ...data,
-    tournaments: data.tournaments.map((x) => (x.id === id ? { ...x, ...clean, updatedAt: t } : x)),
-    matches:
-      old && old.date !== clean.date
-        ? data.matches.map((m) => (m.tournamentId === id ? { ...m, date: clean.date, updatedAt: t } : m))
-        : data.matches
+    tournaments: data.tournaments.map((x) => (x.id === id ? { ...x, deleted: true, updatedAt: t } : x)),
+    // Le sue partite vanno nel cestino con lui: escono dalla classifica ma si possono ancora recuperare.
+    matches: data.matches.map((m) => (m.tournamentId === id && !m.deleted ? { ...m, deleted: true, updatedAt: t } : m))
   }
+}
+
+/** Aggiorna dati e struttura del torneo; se cambia la data, la cambia anche a tutte le sue partite. */
+export function updateTournament(data: AppData, id: string, d: TournamentDraft): AppData {
+  const old = data.tournaments.find((x) => x.id === id)
+  if (!old) throw new Error('Torneo non trovato')
+  const clean = validateTournament(data, d, old)
+  const t = nowISO()
+  return syncTournament(
+    {
+      ...data,
+      tournaments: data.tournaments.map((x) => (x.id === id ? { ...x, ...clean, updatedAt: t } : x)),
+      matches:
+        old.date !== clean.date
+          ? data.matches.map((m) => (m.tournamentId === id ? { ...m, date: clean.date, updatedAt: t } : m))
+          : data.matches
+    },
+    id
+  )
 }
 
 export function setMatchOverride(data: AppData, id: string, override: MatchOverride | undefined): AppData {
@@ -132,17 +273,50 @@ export function setMatchOverride(data: AppData, id: string, override: MatchOverr
 }
 
 export function deleteMatch(data: AppData, id: string): AppData {
-  return {
-    ...data,
-    matches: data.matches.map((m) => (m.id === id ? { ...m, deleted: true, updatedAt: nowISO() } : m))
+  const m = data.matches.find((x) => x.id === id)
+  const t = m?.tournamentId ? data.tournaments.find((x) => x.id === m.tournamentId && !x.deleted) : undefined
+  if (m && t && dependentMatch(data, t, m)) {
+    throw new Error('Il vincitore di questa partita ha già giocato il turno successivo: elimina prima quella partita')
   }
+  // Eliminata l'ultima partita di un torneo, se ne va anche il torneo.
+  return syncTournament(
+    {
+      ...data,
+      matches: data.matches.map((x) => (x.id === id ? { ...x, deleted: true, updatedAt: nowISO() } : x))
+    },
+    m?.tournamentId,
+    true
+  )
 }
 
+/**
+ * Ripristina dal cestino, solo se la partita ha ancora posto (es. nel girone non è stata reinserita).
+ * Se il suo torneo era stato eliminato, torna anche il torneo.
+ */
 export function restoreMatch(data: AppData, id: string): AppData {
-  return {
-    ...data,
-    matches: data.matches.map((m) => (m.id === id ? { ...m, deleted: false, updatedAt: nowISO() } : m))
+  const m = data.matches.find((x) => x.id === id)
+  if (!m) throw new Error('Partita non trovata')
+  const now = nowISO()
+  let next = data
+  if (m.tournamentId) {
+    const tour = data.tournaments.find((x) => x.id === m.tournamentId)
+    if (!tour) throw new Error('Non si può ripristinare: il torneo non esiste più')
+    if (tour.deleted) {
+      next = { ...data, tournaments: data.tournaments.map((x) => (x.id === tour.id ? { ...x, deleted: false, updatedAt: now } : x)) }
+    }
+    try {
+      validateDraft(next, m, id)
+    } catch (e) {
+      throw new Error(`Non si può ripristinare: ${(e as Error).message.replace(/^\w/, (c) => c.toLowerCase())}`)
+    }
   }
+  return syncTournament(
+    {
+      ...next,
+      matches: next.matches.map((x) => (x.id === id ? { ...x, deleted: false, updatedAt: now } : x))
+    },
+    m.tournamentId
+  )
 }
 
 export function updateMeta(data: AppData, season: Season, settings: Settings): AppData {

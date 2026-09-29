@@ -52,10 +52,37 @@ export interface Match {
   note?: string
   /** Partita di torneo: usa il K del torneo ed è fuori dai limiti per coppia. */
   tournamentId?: string
+  /** Fase del torneo (girone o turno del tabellone). */
+  stage?: MatchStage
+  /** Punteggi dei singoli set, dal punto di vista di A (facoltativi). */
+  setScores?: [number, number][]
   override?: MatchOverride
   createdAt: string // ISO, usato anche per ordinare partite dello stesso giorno
   updatedAt: string // ISO
   deleted?: boolean
+}
+
+/**
+ * Turni del tabellone contati dalla fine: 1 = finale, 2 = semifinali, 3 = quarti, 4 = ottavi, 5 = sedicesimi.
+ * `slot` è la posizione della partita nel turno (0 = la prima in alto). 'third' è la finale per il 3º/4º posto.
+ */
+export type MatchStage = { type: 'group'; group: string } | { type: 'bracket'; round: number; slot: number } | { type: 'third' }
+
+/** Nel sorteggio del tabellone: il giocatore accoppiato con BYE passa il turno senza giocare ("prende la X"). */
+export const BYE = 'X'
+
+/**
+ * - free: solo partite, senza struttura
+ * - group: girone unico all'italiana
+ * - group-bracket: girone unico, poi tabellone
+ * - groups-bracket: più gironi, poi tabellone
+ */
+export type TournamentFormat = 'free' | 'group' | 'group-bracket' | 'groups-bracket'
+
+export interface TournamentGroup {
+  id: string
+  name: string
+  players: string[]
 }
 
 export interface Tournament {
@@ -63,6 +90,19 @@ export interface Tournament {
   date: string // YYYY-MM-DD, la stessa di tutte le sue partite
   name?: string
   k: number
+  /** Assente nei tornei creati prima della struttura: equivale a 'free'. */
+  format?: TournamentFormat
+  groups?: TournamentGroup[]
+  /** Turno da cui parte il tabellone (vedi MatchStage), es. 2 = dalle semifinali. */
+  bracketRounds?: number
+  thirdPlace?: boolean
+  /**
+   * Accoppiamenti del primo turno, scelti a mano: 2^bracketRounds posti, a coppie (0-1, 2-3…).
+   * Ogni posto è un giocatore, BYE oppure null (ancora da decidere). I turni successivi seguono i risultati.
+   */
+  draw?: (string | null)[]
+  /** Accoppiamenti composti dall'app a gironi finiti (e non ritoccati a mano): si aggiornano se cambiano i risultati. */
+  drawAuto?: boolean
   createdAt: string
   updatedAt: string
   deleted?: boolean

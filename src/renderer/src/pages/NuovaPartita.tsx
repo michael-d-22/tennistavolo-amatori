@@ -1,12 +1,29 @@
 import { useMemo, useState } from 'react'
 import { fmtDelta, formatLongDate, todayISO, tournamentLabel } from '@core/format'
-import { addMatch, addTournament, updateTournament } from '@core/mutations'
-import type { Tournament } from '@core/types'
+import { addMatch } from '@core/mutations'
+import { BYE, type MatchStage } from '@core/types'
 import { pairKey } from '@core/rules'
 import { previewMatch } from '@core/standings'
+import {
+  FORMAT_LABELS,
+  buildBracket,
+  hasBracket,
+  hasGroups,
+  isBye,
+  pendingNodes,
+  phasesOf,
+  remainingPairs,
+  samePhase,
+  stageLabel,
+  stageOfNode,
+  tournamentMatches,
+  type BracketNode,
+  type Phase
+} from '@core/tournament'
 import { useStore } from '../store'
 import { Empty, Meter, PageHead } from '../components/ui'
 import { IconChevron } from '../components/icons'
+import { TournamentSetup } from '../components/TournamentSetup'
 import type { Navigate } from '../App'
 
 const WIN_A: [number, number][] = [
@@ -31,8 +48,6 @@ const WIN_B3: [number, number][] = [
 
 const ORDINALS = ['prima', 'seconda', 'terza', 'quarta', 'quinta', 'sesta', 'settima', 'ottava']
 
-const TEMP_TOUR = '~torneo'
-
 export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   const { data, computed, update, toast } = useStore()
   const [date, setDate] = useState(todayISO())
@@ -40,90 +55,170 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   const [b, setB] = useState('')
   const [score, setScore] = useState<[number, number] | null>(null)
   const [note, setNote] = useState('')
-  // Modalità torneo: tutte le partite del torneo si inseriscono di seguito con il K del torneo.
+  // Modalità torneo: tutte le partite del torneo si inseriscono di seguito, fase per fase.
   const [tourMode, setTourMode] = useState(false)
-  const [tourId, setTourId] = useState('') // '' = torneo nuovo, non ancora salvato
-  const [tourName, setTourName] = useState('')
-  const [tourK, setTourK] = useState(data.settings.tournamentK)
+  const [tourId, setTourId] = useState('')
+  const [phase, setPhase] = useState<Phase | undefined>(undefined)
+  const [nodeSlot, setNodeSlot] = useState<number | null>(null)
+  const [sets, setSets] = useState<[string, string][]>([])
+  const [setup, setSetup] = useState<'new' | 'edit' | null>(null)
 
-  const players = data.players
-    .filter((p) => !p.deleted && p.status === 'active')
-    .sort((x, y) => x.name.localeCompare(y.name, 'it'))
   const nameOf = (id: string) => data.players.find((p) => p.id === id)?.name ?? '?'
   const ratingOf = (id: string) => computed.standings.find((s) => s.player.id === id)?.rating ?? data.settings.startRating
   const { maxMatchesPerPair: max, minMatchesPerPair: min } = data.settings
 
   const tournaments = data.tournaments.filter((t) => !t.deleted).sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
-  const savedTour = tournaments.find((t) => t.id === tourId)
-  // Torneo come sarà dopo il salvataggio (nome/data/K modificati si applicano con la prossima partita).
-  const draftTour: Tournament | undefined = tourMode
-    ? {
-        id: tourId || TEMP_TOUR,
-        date,
-        name: tourName.trim() || undefined,
-        k: tourK,
-        createdAt: savedTour?.createdAt ?? '',
-        updatedAt: savedTour?.updatedAt ?? ''
-      }
-    : undefined
-  const tourChanged = !!savedTour && (savedTour.date !== date || (savedTour.name ?? '') !== tourName.trim() || savedTour.k !== tourK)
+  const tour = tourMode ? tournaments.find((t) => t.id === tourId) : undefined
+  const phases = tour ? phasesOf(tour) : []
+  const curPhase = phases.find((p) => samePhase(p, phase)) ?? phases[0]
+  const matchDate = tour ? tour.date : date
+  const tMatches = useMemo(() => (tour ? tournamentMatches(data, tour.id) : []), [data, tour])
+  const bracket = useMemo(() => (tour && hasBracket(tour) ? buildBracket(tour, tMatches) : null), [tour, tMatches])
+
+  // Girone: chi ha già affrontato chi (ogni coppia gioca una volta sola).
+  const group = curPhase?.type === 'group' ? tour?.groups?.find((g) => g.id === curPhase.group) : undefined
+  const remaining = group ? remainingPairs(group, tMatches) : []
+  const canStillPlay = (p: string, vs?: string) => remaining.some(([x, y]) => (x === p || y === p) && (!vs || x === vs || y === vs))
+
+  // Tabellone: solo le partite in programma nel turno scelto.
+  const isKnockout = curPhase?.type === 'bracket' || curPhase?.type === 'third'
+  const pending = bracket && curPhase && isKnockout ? pendingNodes(bracket, curPhase) : []
+  const node = pending.find((n) => n.slot === nodeSlot) ?? null
+  const roundNodes =
+    bracket && curPhase?.type === 'bracket' ? (bracket.rounds.find((r) => r[0]?.round === curPhase.round) ?? []) : bracket?.third ? [bracket.third] : []
+
+  const players = data.players
+    .filter((p) => {
+      if (p.deleted) return false
+      if (group) return group.players.includes(p.id)
+      if (tour && hasGroups(tour)) return false
+      return p.status === 'active'
+    })
+    .sort((x, y) => x.name.localeCompare(y.name, 'it'))
+  const activeCount = data.players.filter((p) => !p.deleted && p.status === 'active').length
+
+  function clearPlayers() {
+    setA('')
+    setB('')
+    setNodeSlot(null)
+  }
 
   function pickTournament(id: string) {
     setTourId(id)
-    const t = tournaments.find((x) => x.id === id)
-    setTourName(t?.name ?? '')
-    setTourK(t?.k ?? data.settings.tournamentK)
-    if (t) setDate(t.date)
+    setPhase(undefined)
+    clearPlayers()
   }
 
-  function switchMode(tour: boolean) {
-    setTourMode(tour)
-    setScore(null)
-    if (tour && !tourId) setTourK(data.settings.tournamentK)
-    // Tornando alle partite singole non si resta per sbaglio sulla data del torneo.
-    if (!tour && tourId) setDate(todayISO())
+  function pickPhase(p: Phase) {
+    setPhase(p)
+    clearPlayers()
+  }
+
+  function pickNode(n: BracketNode) {
+    setNodeSlot(n.slot)
+    setA(n.a!)
+    setB(n.b!)
+  }
+
+  function pickPair(x: string, y: string) {
+    setA(x)
+    setB(y)
+  }
+
+  // Nel girone, cambiando un giocatore si toglie l'altro se hanno già giocato tra loro.
+  function pickA(id: string) {
+    setA(id)
+    if (group && b && (b === id || !canStillPlay(id, b))) setB('')
+  }
+  function pickB(id: string) {
+    setB(id)
+    if (group && a && (a === id || !canStillPlay(id, a))) setA('')
+  }
+
+  function switchMode(on: boolean) {
+    setTourMode(on)
+    pickScore(null)
+    clearPlayers()
+  }
+
+  function pickScore(s: [number, number] | null) {
+    setScore(s)
+    const n = s ? s[0] + s[1] : 0
+    setSets((old) => Array.from({ length: n }, (_, i) => old[i] ?? ['', '']))
+  }
+
+  function setSet(i: number, side: 0 | 1, v: string) {
+    setSets(sets.map((x, j) => (j === i ? ((side === 0 ? [v, x[1]] : [x[0], v]) as [string, string]) : x)))
   }
 
   const preview = useMemo(() => {
     if (!a || !b || a === b || !score) return null
-    return previewMatch(data, { date, playerA: a, playerB: b, setsA: score[0], setsB: score[1], tournamentId: draftTour?.id }, draftTour)
-  }, [data, date, a, b, score, tourMode, tourId, tourName, tourK])
+    return previewMatch(data, { date: matchDate, playerA: a, playerB: b, setsA: score[0], setsB: score[1], tournamentId: tour?.id })
+  }, [data, matchDate, a, b, score, tour])
 
+  const stageToSave: MatchStage | undefined = !tour || !hasGroups(tour) ? undefined : isKnockout ? (node ? stageOfNode(node) : undefined) : curPhase
+  const structureOk = !tourMode || (!!tour && (!hasGroups(tour) || (isKnockout ? !!node : !!group && canStillPlay(a, b))))
   const pairCount = a && b && a !== b ? (computed.pairCounted.get(pairKey(a, b)) ?? 0) : null
-  const tourValid = !tourMode || tourK > 0
-  const canSave = a && b && a !== b && score && tourValid
+  const canSave = !!a && !!b && a !== b && !!score && structureOk
   const aWins = !!score && score[0] > score[1]
   const bWins = !!score && score[1] > score[0]
 
   function save() {
     if (!canSave) return
-    let newTourId = tourId
-    const ok = update((d) => {
-      let next = d
-      if (tourMode) {
-        const draft = { date, name: tourName, k: tourK }
-        if (!tourId) {
-          const r = addTournament(next, draft)
-          next = r.data
-          newTourId = r.id
-        } else if (tourChanged) {
-          next = updateTournament(next, tourId, draft)
-        }
-      }
-      const match = { date, playerA: a, playerB: b, setsA: score![0], setsB: score![1], note, tournamentId: tourMode ? newTourId : undefined }
-      return addMatch(next, match).data
-    }, tourMode ? 'partita di torneo' : 'nuova partita')
+    const filled = sets.filter(([x, y]) => x !== '' || y !== '').length
+    if (filled > 0 && filled < sets.length) {
+      toast('Completa i punteggi di tutti i set, oppure lasciali tutti vuoti', 'error')
+      return
+    }
+    const setScores = filled ? sets.map(([x, y]) => [Number(x), Number(y)] as [number, number]) : undefined
+    const match = {
+      date: matchDate,
+      playerA: a,
+      playerB: b,
+      setsA: score![0],
+      setsB: score![1],
+      note,
+      tournamentId: tour?.id,
+      stage: stageToSave,
+      setScores
+    }
+    let bracketReady = false
+    const ok = update(
+      (d) => {
+        const next = addMatch(d, match).data
+        // A gironi finiti l'app compone il tabellone: lo si segnala.
+        const before = d.tournaments.find((x) => x.id === tour?.id)
+        const after = next.tournaments.find((x) => x.id === tour?.id)
+        bracketReady = !!after?.drawAuto && JSON.stringify(before?.draw) !== JSON.stringify(after.draw)
+        return next
+      },
+      tour ? 'partita di torneo' : 'nuova partita'
+    )
     if (!ok) return
-    if (tourMode) setTourId(newTourId)
     const winner = aWins ? a : b
     toast(`Salvata: vince ${nameOf(winner)} ${Math.max(...score!)}–${Math.min(...score!)}`)
-    setA('')
-    setB('')
-    setScore(null)
+    if (bracketReady) setTimeout(() => toast('Gironi completati: tabellone composto. Puoi ritoccarlo da “Imposta”'), 400)
+    clearPlayers()
+    pickScore(null)
     setNote('')
   }
 
-  if (players.length < 2) {
+  // Avanzamento di ogni fase, mostrato sui pulsanti.
+  const phaseCount = (p: Phase): string => {
+    if (!tour) return ''
+    if (p.type === 'group') {
+      const g = tour.groups?.find((x) => x.id === p.group)
+      if (!g) return ''
+      const total = (g.players.length * (g.players.length - 1)) / 2
+      return `${total - remainingPairs(g, tMatches).length}/${total}`
+    }
+    if (!bracket) return ''
+    const nodes = p.type === 'third' ? (bracket.third ? [bracket.third] : []) : (bracket.rounds.find((r) => r[0]?.round === p.round) ?? [])
+    const real = nodes.filter((n) => !isBye(n))
+    return `${real.filter((n) => n.match).length}/${real.length}`
+  }
+
+  if (activeCount < 2) {
     return (
       <>
         <PageHead title="Nuova partita" />
@@ -150,25 +245,38 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
         {winner && <span className="label strong">Vincitore</span>}
       </span>
       <span className="select-wrap">
-        <select value={value} onChange={(e) => onPick(e.target.value)}>
-          <option value="">Scegli…</option>
-          {players.map((p) => (
-            <option key={p.id} value={p.id} disabled={p.id === other}>
-              {p.name} · {Math.round(ratingOf(p.id))}
-            </option>
-          ))}
-        </select>
+        {isKnockout ? (
+          <select value={value} disabled aria-label={label}>
+            <option value="">{pending.length ? 'Scegli la partita qui sopra' : '—'}</option>
+            {value && <option value={value}>{nameOf(value)}</option>}
+          </select>
+        ) : (
+          <select value={value} onChange={(e) => onPick(e.target.value)}>
+            <option value="">Scegli…</option>
+            {players.map((p) => {
+              // Nel girone: niente avversari già affrontati né chi ha già giocato con tutti.
+              const blocked = group ? (other ? !canStillPlay(p.id, other) : !canStillPlay(p.id)) : false
+              return (
+                <option key={p.id} value={p.id} disabled={p.id === other || (blocked && p.id !== value)}>
+                  {p.name} · {Math.round(ratingOf(p.id))}
+                  {group && blocked && p.id !== other ? ' (già giocata)' : ''}
+                </option>
+              )
+            })}
+          </select>
+        )}
         <IconChevron />
       </span>
     </label>
   )
+
 
   const scoreButtons = (list: [number, number][], label: string) => (
     <div className="score-grid" role="group" aria-label={label}>
       {list.map(([x, y]) => {
         const on = !!score && score[0] === x && score[1] === y
         return (
-          <button key={`${x}${y}`} className={`score-btn ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => setScore([x, y])}>
+          <button key={`${x}${y}`} className={`score-btn ${on ? 'selected' : ''}`} aria-pressed={on} onClick={() => pickScore([x, y])}>
             {x}–{y}
           </button>
         )
@@ -195,9 +303,25 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   const nextIndex = pairCount != null ? pairCount + 1 : 0
 
   const asideResults = tourMode
-    ? computed.results.filter((r) => !!tourId && r.match.tournamentId === tourId).reverse()
+    ? computed.results.filter((r) => !!tour && r.match.tournamentId === tour.id).reverse()
     : computed.results.filter((r) => r.match.date === date).reverse()
-  const asideTitle = draftTour ? tournamentLabel(draftTour) : date === todayISO() ? 'Stasera' : formatLongDate(date)
+  const asideTitle = tourMode ? (tour ? tournamentLabel(tour) : 'Torneo') : date === todayISO() ? 'Stasera' : formatLongDate(date)
+  const stageKey = (s: Phase) => (s.type === 'group' ? `g${s.group}` : s.type === 'third' ? 't' : `b${s.round}`)
+
+  // Perché nel turno scelto non c'è niente da giocare.
+  function knockoutHint(): string {
+    if (curPhase?.type === 'third') {
+      if (!bracket?.third) return 'Non si gioca: una semifinale è stata vinta con la X.'
+      if (bracket.third.match) return 'Finale per il 3º posto già inserita.'
+      return 'In attesa dei risultati delle semifinali.'
+    }
+    const real = roundNodes.filter((n) => !isBye(n))
+    if (real.length && real.every((n) => n.match)) return 'Turno completo: tutte le partite sono state inserite.'
+    if (curPhase?.type === 'bracket' && curPhase.round === tour?.bracketRounds) {
+      return 'Accoppiamenti non ancora decisi: completali da “Imposta”.'
+    }
+    return 'In attesa dei risultati del turno precedente.'
+  }
 
   return (
     <div className="entry-layout">
@@ -216,7 +340,14 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
               </div>
               <label className="field-stack">
                 <span className="label">Data</span>
-                <input type="date" value={date} max={todayISO()} onChange={(e) => setDate(e.target.value || todayISO())} />
+                <input
+                  type="date"
+                  value={matchDate}
+                  max={todayISO()}
+                  disabled={!!tour}
+                  title={tour ? 'È la data del torneo: si cambia da “Imposta”' : undefined}
+                  onChange={(e) => setDate(e.target.value || todayISO())}
+                />
               </label>
             </>
           }
@@ -226,8 +357,8 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
           <section className="tour-bar">
             <label className="field-stack">
               <span className="label">Torneo</span>
-              <select value={tourId} onChange={(e) => pickTournament(e.target.value)}>
-                <option value="">Nuovo torneo</option>
+              <select value={tour?.id ?? ''} onChange={(e) => pickTournament(e.target.value)}>
+                <option value="">Scegli un torneo…</option>
                 {tournaments.map((t) => (
                   <option key={t.id} value={t.id}>
                     {tournamentLabel(t)}
@@ -236,29 +367,107 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
                 ))}
               </select>
             </label>
-            <label className="field-stack">
-              <span className="label">Nome (facoltativo)</span>
-              <input value={tourName} placeholder={tournamentLabel({ date })} onChange={(e) => setTourName(e.target.value)} />
-            </label>
-            <label className="field-stack">
-              <span className="label">Fattore K</span>
-              <input type="number" min={1} value={tourK} onChange={(e) => setTourK(Math.max(0, Number(e.target.value) || 0))} />
-            </label>
+            <div className="tour-bar-info">
+              {tour ? (
+                <>
+                  <span className="label">{FORMAT_LABELS[tour.format ?? 'free']}</span>
+                  <span className="small">
+                    {formatLongDate(tour.date)} · K {tour.k}
+                    {tour.groups?.length ? ` · ${tour.groups.reduce((n, g) => n + g.players.length, 0)} partecipanti` : ''}
+                  </span>
+                </>
+              ) : (
+                <span className="small">Scegli il torneo o creane uno nuovo con gironi e tabellone.</span>
+              )}
+            </div>
+            <div className="row">
+              {tour && (
+                <button className="btn" onClick={() => setSetup('edit')}>
+                  Imposta
+                </button>
+              )}
+              <button className="btn btn-primary" onClick={() => setSetup('new')}>
+                Nuovo torneo
+              </button>
+            </div>
+            {tour && phases.length > 0 && (
+              <div className="stage-row">
+                <span className="label">Fase</span>
+                <div className="seg seg-wrap" role="group" aria-label="Fase del torneo">
+                  {phases.map((p) => (
+                    <button key={stageKey(p)} className={samePhase(p, curPhase) ? 'active' : ''} aria-pressed={samePhase(p, curPhase)} onClick={() => pickPhase(p)}>
+                      {stageLabel(tour, p)} <span className="seg-count">{phaseCount(p)}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {tour && group && (
+              <div className="stage-row">
+                <span className="label">Da giocare</span>
+                {remaining.length === 0 ? (
+                  <span className="small">Girone {group.name} completo: tutte le coppie si sono affrontate.</span>
+                ) : (
+                  <div className="pair-chips">
+                    {remaining.map(([x, y]) => (
+                      <button
+                        key={`${x}${y}`}
+                        className={`pair-chip ${(a === x && b === y) || (a === y && b === x) ? 'active' : ''}`}
+                        onClick={() => pickPair(x, y)}
+                      >
+                        {surname(x)} – {surname(y)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {tour && isKnockout && (
+              <div className="stage-row">
+                <span className="label">Da giocare</span>
+                {pending.length > 0 ? (
+                  <div className="pair-chips">
+                    {pending.map((n) => (
+                      <button key={n.slot} className={`pair-chip ${nodeSlot === n.slot ? 'active' : ''}`} onClick={() => pickNode(n)}>
+                        {nameOf(n.a!)} – {nameOf(n.b!)}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="small">{knockoutHint()}</span>
+                )}
+                {roundNodes.some(isBye) && (
+                  <span className="small dim">
+                    Passano il turno con la X:{' '}
+                    {roundNodes
+                      .filter(isBye)
+                      .map((n) => (n.a === BYE ? n.b : n.a))
+                      .filter((p): p is string => !!p && p !== BYE)
+                      .map(nameOf)
+                      .join(', ') || '—'}
+                  </span>
+                )}
+              </div>
+            )}
             <p className="tour-bar-note">
-              {tourId
-                ? tourChanged
-                  ? 'Le modifiche a nome, data o K verranno applicate a tutto il torneo con la prossima partita salvata.'
-                  : 'Le nuove partite si aggiungono a questo torneo.'
-                : 'Il torneo viene creato con la prima partita salvata; poi inserisci le altre di seguito.'}{' '}
-              Le partite di torneo usano questo K e non rientrano nel limite di {max} partite per coppia né nel minimo di {min}.
+              Le partite di torneo usano il K del torneo e non rientrano nel limite di {max} partite per coppia né nel minimo di {min}.
             </p>
           </section>
         )}
 
+        {setup && (
+          <TournamentSetup
+            tournament={setup === 'edit' ? tour : undefined}
+            defaultDate={date}
+            onClose={() => setSetup(null)}
+            onSaved={(id) => setup === 'new' && pickTournament(id)}
+          />
+        )}
+
         <section className="vs-row">
-          {renderSelect(a, b, setA, 'Giocatore 1', aWins)}
+          {renderSelect(a, b, pickA, 'Giocatore 1', aWins)}
           <div className="vs">VS</div>
-          {renderSelect(b, a, setB, 'Giocatore 2', bWins)}
+          {renderSelect(b, a, pickB, 'Giocatore 2', bWins)}
         </section>
 
         <section className="vs-row">
@@ -266,6 +475,29 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
           <div />
           {scoreGroup(WIN_B, WIN_B3, 'Vince il giocatore 2')}
         </section>
+
+        {tourMode && sets.length > 0 && (
+          <section className="set-scores">
+            <span className="label-row">
+              <span className="label">Punteggi dei set (facoltativi)</span>
+              <span className="label">
+                {a ? surname(a) : 'G1'} – {b ? surname(b) : 'G2'}
+              </span>
+            </span>
+            <div className="set-grid">
+              {sets.map(([x, y], i) => (
+                <div key={i} className="set-cell">
+                  <span className="bo-label">Set {i + 1}</span>
+                  <span className="set-pair">
+                    <input type="number" min={0} inputMode="numeric" aria-label={`Set ${i + 1}, giocatore 1`} value={x} onChange={(e) => setSet(i, 0, e.target.value)} />
+                    <span className="dim">–</span>
+                    <input type="number" min={0} inputMode="numeric" aria-label={`Set ${i + 1}, giocatore 2`} value={y} onChange={(e) => setSet(i, 1, e.target.value)} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className={`preview-strip ${preview && !preview.eval.counted ? 'warn' : ''}`}>
           {preview && preview.eval.counted ? (
@@ -304,7 +536,7 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
             <div className="preview-cell meter-cell">
               <span className="label-row">
                 <span className="label">Partita di torneo</span>
-                <span className="label strong">K {tourK}</span>
+                <span className="label strong">K {tour?.k ?? '—'}</span>
               </span>
               <span className="dim small">
                 Fuori dai limiti per coppia: non occupa nessuna delle {max} partite
@@ -329,7 +561,7 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
           )}
         </section>
 
-        {preview?.eval.counted && date !== todayISO() && (
+        {preview?.eval.counted && matchDate !== todayISO() && (
           <p className="dim small">Partita in data passata: tutta la classifica verrà ricalcolata da quel giorno.</p>
         )}
 
@@ -360,7 +592,11 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
                 const m = r.match
                 const aw = m.setsA > m.setsB
                 return (
-                  <tr key={m.id} className={`${r.eval.counted ? '' : 'excluded'} ${m.tournamentId ? 'tour' : ''}`}>
+                  <tr
+                    key={m.id}
+                    className={`${r.eval.counted ? '' : 'excluded'} ${m.tournamentId ? 'tour' : ''}`}
+                    title={[stageLabel(tour, m.stage), m.setScores?.map(([x, y]) => `${x}-${y}`).join(' ')].filter(Boolean).join(' · ') || undefined}
+                  >
                     <td className={aw ? 'strong' : 'dim'}>{surname(m.playerA)}</td>
                     <td className="day-score">
                       {m.setsA}–{m.setsB}

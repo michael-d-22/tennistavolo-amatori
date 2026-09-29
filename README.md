@@ -26,15 +26,23 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
 
 - **Inserimento rapido delle partite**: due clic per i giocatori, uno per il risultato (3-0, 3-1, 3-2…).
   Prima di salvare mostra quanti punti guadagna e perde ciascuno e avvisa se la partita non conterà.
-- **Tornei**: modalità “Torneo” per inserire di seguito tutte le partite di un torneo (data, nome facoltativo,
-  K proprio, predefinito 48), al meglio dei 5 o dei 3 set. Le partite di torneo sono evidenziate in oro.
+- **Tornei**: girone unico, girone unico + tabellone, più gironi + tabellone (oppure formato libero). Si crea il torneo
+  (data, nome facoltativo, K proprio, predefinito 48), si assegnano i giocatori ai gironi e si inseriscono le partite
+  fase per fase, al meglio dei 5 o dei 3 set, con i punteggi dei singoli set facoltativi. Nel girone ogni coppia gioca
+  una volta sola; nel tabellone si scelgono a mano gli accoppiamenti del primo turno (anche con la X: chi la prende passa
+  il turno) e poi avanza da solo con i vincitori; a gironi finiti l'app compone da sola il primo turno (modificabile).
+  Si possono inserire solo le partite in programma, una volta sola. Un torneo si elimina con tutte le sue partite
+  (e si elimina da solo quando se ne cancella l'ultima partita). Il
+  tabellone può partire da un turno più largo dei qualificati, con finale per il 3º posto opzionale. Le partite di torneo
+  sono evidenziate in oro.
 - **Classifica** con punti, variazione e ▲▼ di posizione rispetto all'ultima pubblicazione, vittorie,
   sconfitte, set, forma recente e stato di qualificazione.
 - **Scontri diretti**: tabella di chi ha giocato con chi, con evidenziate le coppie che non hanno ancora
   raggiunto il minimo richiesto o che hanno già esaurito le partite valide, più una seconda tabella con le
   partite in esubero (oltre l'8ª con lo stesso avversario).
 - **Scheda giocatore** con grafico dell'andamento dei punti e bilancio contro ogni avversario.
-- **Pubblicazione**: immagine o testo pronti da incollare su WhatsApp, oppure PNG, PDF, Excel e CSV.
+- **Pubblicazione**: immagine o testo pronti da incollare su WhatsApp, oppure PNG, PDF, Excel e CSV. Per ogni torneo
+  anche un riepilogo con podio, partecipanti, gironi, tabellone e risultati set per set.
 - **Partite escluse, mai cancellate**: restano visibili barrate con il motivo e si possono includere o
   escludere a mano.
 - **Tema scuro** (predefinito) e **tema chiaro**, oppure automatico come Windows. Grafica “da tabellone”: blu e rosso del

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { fmtDelta, formatDate, formatLongDate } from '@core/format'
-import { deleteMatch, restoreMatch, setMatchOverride, updateMatch } from '@core/mutations'
+import { fmtDelta, formatDate, formatLongDate, tournamentLabel } from '@core/format'
+import { deleteMatch, restoreMatch, setMatchOverride, updateMatch, updateTournament } from '@core/mutations'
 import { isValidScore } from '@core/rules'
 import type { MatchResult } from '@core/standings'
-import type { Match, OverrideMode } from '@core/types'
+import type { Match, OverrideMode, Tournament } from '@core/types'
 import { useStore } from '../store'
 import { Confirm, Empty, Modal, PageHead } from '../components/ui'
 import { IconNote } from '../components/icons'
@@ -16,7 +16,9 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
   const [editing, setEditing] = useState<Match | null>(null)
   const [overriding, setOverriding] = useState<MatchResult | null>(null)
   const [deleting, setDeleting] = useState<Match | null>(null)
+  const [editingTour, setEditingTour] = useState<Tournament | null>(null)
 
+  const tournaments = new Map(data.tournaments.map((t) => [t.id, t]))
   const nameOf = (id: string) => data.players.find((p) => p.id === id)?.name ?? '?'
   const players = data.players.filter((p) => !p.deleted).sort((a, b) => a.name.localeCompare(b.name, 'it'))
 
@@ -25,7 +27,7 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
       return data.matches
         .filter((m) => m.deleted && (!player || m.playerA === player || m.playerB === player))
         .sort((a, b) => (a.date < b.date ? 1 : -1))
-        .map((m) => ({ match: m, eval: { counted: false }, deltaA: 0, ratingA: 0, ratingB: 0 }) as MatchResult)
+        .map((m) => ({ match: m, eval: { counted: false }, deltaA: 0, ratingA: 0, ratingB: 0, k: 0 }) as MatchResult)
     }
     return [...computed.results]
       .reverse()
@@ -33,15 +35,16 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
       .filter((r) => status === 'all' || (status === 'counted' ? r.eval.counted : !r.eval.counted))
   }, [computed, data.matches, player, status])
 
-  // Raggruppa per data (le serate di allenamento).
+  // Raggruppa per data (le serate di allenamento); ogni torneo ha il suo gruppo.
   const groups = useMemo(() => {
-    const g = new Map<string, MatchResult[]>()
+    const g = new Map<string, { date: string; tournamentId?: string; list: MatchResult[] }>()
     for (const r of rows) {
-      const list = g.get(r.match.date) ?? []
-      list.push(r)
-      g.set(r.match.date, list)
+      const key = `${r.match.date}|${r.match.tournamentId ?? ''}`
+      const group = g.get(key) ?? { date: r.match.date, tournamentId: r.match.tournamentId, list: [] }
+      group.list.push(r)
+      g.set(key, group)
     }
-    return [...g.entries()]
+    return [...g.values()]
   }, [rows])
 
   return (
@@ -78,21 +81,39 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
       {groups.length === 0 ? (
         <Empty>Nessuna partita.</Empty>
       ) : (
-        groups.map(([date, list]) => (
-          <section className="day-group" key={date}>
-            <div className="section-head">
-              <h2>{formatLongDate(date)}</h2>
-              <span className="mono dim small">
-                {list.length} {list.length === 1 ? 'partita' : 'partite'}
-              </span>
-            </div>
+        groups.map(({ date, tournamentId, list }) => {
+          const tour = tournamentId ? tournaments.get(tournamentId) : undefined
+          return (
+          <section className="day-group" key={`${date}|${tournamentId ?? ''}`}>
+            {tournamentId ? (
+              <div className="section-head tour-head">
+                <h2>{tour ? tournamentLabel(tour) : 'Torneo'}</h2>
+                <span className="mono small">
+                  {tour?.name ? `${formatLongDate(date)} · ` : ''}K {tour?.k ?? list[0].k} · {list.length} {list.length === 1 ? 'partita' : 'partite'}
+                </span>
+                {tour && (
+                  <span className="actions">
+                    <button className="btn btn-ghost btn-sm" onClick={() => setEditingTour(tour)}>
+                      Modifica torneo
+                    </button>
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="section-head">
+                <h2>{formatLongDate(date)}</h2>
+                <span className="mono dim small">
+                  {list.length} {list.length === 1 ? 'partita' : 'partite'}
+                </span>
+              </div>
+            )}
             <table className="table matches">
               <tbody>
                 {list.map((r) => {
                   const m = r.match
                   const aWon = m.setsA > m.setsB
                   return (
-                    <tr key={m.id} className={r.eval.counted ? '' : 'excluded'}>
+                    <tr key={m.id} className={`${r.eval.counted ? '' : 'excluded'} ${m.tournamentId ? 'tour' : ''}`}>
                       <td className={`right ${aWon ? 'winner' : ''}`}>{nameOf(m.playerA)}</td>
                       <td className="score">
                         {m.setsA}–{m.setsB}
@@ -115,8 +136,8 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
                             </span>
                           ) : null
                         ) : (
-                          <span className="chip chip-bad" title={r.eval.reason}>
-                            {r.eval.kind === 'cap' ? 'oltre limite' : r.eval.kind === 'abandon' ? 'abbandono' : 'esclusa a mano'}
+                          <span className={`chip ${r.eval.kind === 'inactive' ? 'chip-grey' : 'chip-bad'}`} title={r.eval.reason}>
+                            {r.eval.kind === 'cap' ? 'esubero' : r.eval.kind === 'inactive' ? 'in pausa' : 'esclusa a mano'}
                           </span>
                         )}
                         {m.note && (
@@ -153,10 +174,12 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
               </tbody>
             </table>
           </section>
-        ))
+          )
+        })
       )}
 
       {editing && <MatchEditor match={editing} onClose={() => setEditing(null)} />}
+      {editingTour && <TournamentEditor tournament={editingTour} onClose={() => setEditingTour(null)} />}
       {overriding && <OverrideEditor result={overriding} onClose={() => setOverriding(null)} />}
       {deleting && (
         <Confirm
@@ -188,7 +211,8 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
   const [sb, setSb] = useState(match.setsB)
   const [note, setNote] = useState(match.note ?? '')
   const players = data.players.filter((p) => !p.deleted).sort((x, y) => x.name.localeCompare(y.name, 'it'))
-  const valid = a && b && a !== b && isValidScore(sa, sb)
+  const tour = match.tournamentId ? data.tournaments.find((t) => t.id === match.tournamentId) : undefined
+  const valid = a && b && a !== b && isValidScore(sa, sb, !!tour)
 
   function save() {
     if (update((d) => updateMatch(d, match.id, { date, playerA: a, playerB: b, setsA: sa, setsB: sb, note }), 'modifica partita')) {
@@ -215,9 +239,17 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
       <div className="form-grid">
         <label>
           Data
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input type="date" value={date} disabled={!!tour} onChange={(e) => setDate(e.target.value)} />
+          {tour && <small className="muted">La data si cambia da “Modifica torneo”</small>}
         </label>
-        <span />
+        {tour ? (
+          <label>
+            Torneo
+            <input value={`${tournamentLabel(tour)} · K ${tour.k}`} disabled />
+          </label>
+        ) : (
+          <span />
+        )}
         <label>
           Giocatore 1
           <select value={a} onChange={(e) => setA(e.target.value)}>
@@ -251,7 +283,56 @@ function MatchEditor({ match, onClose }: { match: Match; onClose: () => void }) 
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
       </div>
-      {!valid && <p className="neg small">Controlla giocatori e risultato (3-0, 3-1 o 3-2).</p>}
+      {!valid && (
+        <p className="neg small">Controlla giocatori e risultato ({tour ? '3-0, 3-1, 3-2 oppure 2-0, 2-1' : '3-0, 3-1 o 3-2'}).</p>
+      )}
+    </Modal>
+  )
+}
+
+function TournamentEditor({ tournament, onClose }: { tournament: Tournament; onClose: () => void }) {
+  const { update, toast } = useStore()
+  const [date, setDate] = useState(tournament.date)
+  const [name, setName] = useState(tournament.name ?? '')
+  const [k, setK] = useState(tournament.k)
+
+  function save() {
+    if (update((d) => updateTournament(d, tournament.id, { date, name, k }), 'modifica torneo')) {
+      toast('Torneo aggiornato, classifica ricalcolata')
+      onClose()
+    }
+  }
+
+  return (
+    <Modal
+      title="Modifica torneo"
+      onClose={onClose}
+      footer={
+        <>
+          <button className="btn btn-ghost" onClick={onClose}>
+            Annulla
+          </button>
+          <button className="btn btn-primary" disabled={!date || !(k > 0)} onClick={save}>
+            Salva
+          </button>
+        </>
+      }
+    >
+      <div className="form-grid">
+        <label className="span2">
+          Nome (facoltativo)
+          <input value={name} placeholder={tournamentLabel({ date })} onChange={(e) => setName(e.target.value)} autoFocus />
+        </label>
+        <label>
+          Data
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+        <label>
+          Fattore K
+          <input type="number" min={1} value={k} onChange={(e) => setK(Math.max(0, Number(e.target.value) || 0))} />
+        </label>
+      </div>
+      <p className="muted small">Data e K valgono per tutte le partite del torneo: la classifica viene ricalcolata.</p>
     </Modal>
   )
 }

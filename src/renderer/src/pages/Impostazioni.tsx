@@ -96,6 +96,11 @@ export function ImpostazioniPage() {
               <input type="number" value={settings.k} onChange={num('k')} />
             </label>
             <label>
+              Fattore K tornei
+              <input type="number" min={1} value={settings.tournamentK} onChange={num('tournamentK')} />
+              <small className="muted">Proposto per i nuovi tornei; ognuno può averne uno suo</small>
+            </label>
+            <label>
               Max partite per coppia
               <input type="number" min={1} value={settings.maxMatchesPerPair} onChange={num('maxMatchesPerPair')} />
               <small className="muted">Le partite oltre questo numero non contano</small>
@@ -285,6 +290,9 @@ function ImportModal({ incoming, onClose }: { incoming: AppData; onClose: () => 
             Partite: {report.matches.added} nuove, {report.matches.updated} aggiornate
           </li>
           <li>
+            Tornei: {report.tournaments.added} nuovi, {report.tournaments.updated} aggiornati
+          </li>
+          <li>
             Pubblicazioni: {report.snapshots.added} nuove, {report.snapshots.updated} aggiornate
           </li>
           {report.settingsFromIncoming && <li>Impostazioni della stagione prese dal file (più recenti)</li>}
@@ -295,5 +303,5 @@ function ImportModal({ incoming, onClose }: { incoming: AppData; onClose: () => 
 }
 
 function sum(r: MergeReport) {
-  return r.players.added + r.players.updated + r.matches.added + r.matches.updated + r.snapshots.added + r.snapshots.updated
+  return [r.players, r.matches, r.tournaments, r.snapshots].reduce((n, x) => n + x.added + x.updated, 0)
 }

@@ -1,5 +1,5 @@
 import { toPng } from 'html-to-image'
-import { fmtDelta, formatDate, formatLongDate, matchesCsv, standingsCsv, whatsappText } from '@core/format'
+import { fmtDelta, formatDate, formatLongDate, matchesCsv, standingsCsv, tournamentLabel, whatsappText } from '@core/format'
 import type { Computed, Standing } from '@core/standings'
 import type { AppData } from '@core/types'
 import { FONT_FACE_CSS, fontsReady } from '../fonts'
@@ -95,7 +95,7 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
     <div class="amr-cols amr-mono"><span>#</span><span></span><span class="l">Giocatore</span><span>Punti</span><span>Var.</span><span>Par. (V–P)</span><span>Set (V–P)</span></div>
     ${rows}
     <footer class="amr-foot amr-mono">
-      <span>${valid} partite valide${retired.length ? `<br>Ritirati: ${retired.map((s) => esc(s.player.name)).join(', ')}` : ''}</span>
+      <span>${valid} partite valide${retired.length ? `<br>Inattivi: ${retired.map((s) => esc(s.player.name)).join(', ')}` : ''}</span>
       <span>In classifica ufficiale chi ha giocato<br>almeno ${data.settings.minMatchesPerPair} partite con ogni avversario</span>
     </footer>
   </div>`
@@ -160,6 +160,7 @@ export async function saveCsv(data: AppData, c: Computed, date: string, kind: 'c
 
 export async function saveXlsx(data: AppData, c: Computed, date: string) {
   const name = new Map(data.players.map((p) => [p.id, p.name]))
+  const tour = new Map(data.tournaments.map((t) => [t.id, `${tournamentLabel(t)} (K ${t.k})`]))
   const standings = c.standings
   return window.api.saveXlsx({
     defaultName: `classifica-amatori-${fileDate(date)}.xlsx`,
@@ -190,7 +191,7 @@ export async function saveXlsx(data: AppData, c: Computed, date: string) {
           s.setsWon,
           s.setsLost,
           s.qualified ? 'Sì' : 'No',
-          s.player.status === 'retired' ? 'Ritirato' : 'Attivo'
+          s.player.status === 'retired' ? 'Inattivo' : 'Attivo'
         ]),
         highlightRows: standings.map((s, i) => (s.player.status === 'active' && !s.qualified ? i : -1)).filter((i) => i >= 0)
       },
@@ -198,6 +199,7 @@ export async function saveXlsx(data: AppData, c: Computed, date: string) {
         name: 'Partite',
         columns: [
           { header: 'Data', width: 12 },
+          { header: 'Torneo', width: 24 },
           { header: 'Giocatore 1', width: 22 },
           { header: 'Giocatore 2', width: 22 },
           { header: 'Risultato', width: 10 },
@@ -211,6 +213,7 @@ export async function saveXlsx(data: AppData, c: Computed, date: string) {
           const m = r.match
           return [
             formatDate(m.date),
+            m.tournamentId ? (tour.get(m.tournamentId) ?? 'Torneo') : '',
             name.get(m.playerA) ?? '',
             name.get(m.playerB) ?? '',
             `${m.setsA}-${m.setsB}`,

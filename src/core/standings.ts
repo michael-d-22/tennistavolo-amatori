@@ -1,6 +1,6 @@
 import { eloDelta } from './elo'
 import { evaluateMatches, liveMatches, pairKey, type MatchEval } from './rules'
-import type { AppData, Match, Player, Snapshot } from './types'
+import type { AppData, Match, Player, Snapshot, Tournament } from './types'
 
 export interface MissingOpponent {
   playerId: string
@@ -11,7 +11,7 @@ export interface MissingOpponent {
 export interface Standing {
   player: Player
   rating: number
-  /** Posizione tra tutti i giocatori attivi (i ritirati non hanno posizione). */
+  /** Posizione tra tutti i giocatori attivi (gli inattivi non hanno posizione). */
   position: number | null
   /** Posizione tra i soli qualificati. */
   officialPosition: number | null
@@ -36,6 +36,8 @@ export interface MatchResult {
   deltaA: number
   ratingA: number
   ratingB: number
+  /** Fattore K applicato (quello del torneo per le partite di torneo). */
+  k: number
 }
 
 export interface HistoryPoint {
@@ -49,10 +51,10 @@ export interface Computed {
   results: MatchResult[]
   resultById: Map<string, MatchResult>
   history: Map<string, HistoryPoint[]>
-  /** Partite contate per coppia. */
+  /** Partite normali contate per coppia (i tornei sono fuori dai limiti). */
   pairCounted: Map<string, number>
-  /** Tutte le partite (anche escluse) per coppia. */
-  pairTotal: Map<string, number>
+  /** Partite in esubero (oltre il limite per coppia) per coppia. */
+  pairExcess: Map<string, number>
   lastSnapshot: Snapshot | null
 }
 
@@ -63,7 +65,9 @@ export function latestSnapshot(data: AppData): Snapshot | null {
 }
 
 export function compute(data: AppData): Computed {
-  const { startRating, k, minMatchesPerPair } = data.settings
+  const { startRating, k, tournamentK, minMatchesPerPair } = data.settings
+  const tournamentKs = new Map(data.tournaments.filter((t) => !t.deleted).map((t) => [t.id, t.k]))
+  const kOf = (m: Match) => (m.tournamentId ? (tournamentKs.get(m.tournamentId) ?? tournamentK) : k)
   const players = data.players.filter((p) => !p.deleted)
   const evals = evaluateMatches(data)
   const matches = liveMatches(data)
@@ -80,24 +84,25 @@ export function compute(data: AppData): Computed {
     players.map((p) => [p.id, { played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0, excluded: 0, last: [] }])
   )
   const pairCounted = new Map<string, number>()
-  const pairTotal = new Map<string, number>()
+  const pairExcess = new Map<string, number>()
   const results: MatchResult[] = []
 
   for (const m of matches) {
     const ev = evals.get(m.id)!
     const key = pairKey(m.playerA, m.playerB)
-    pairTotal.set(key, (pairTotal.get(key) ?? 0) + 1)
     const ra = rating.get(m.playerA)!
     const rb = rating.get(m.playerB)!
+    const mk = kOf(m)
     if (!ev.counted) {
+      if (ev.kind === 'cap') pairExcess.set(key, (pairExcess.get(key) ?? 0) + 1)
       stats.get(m.playerA)!.excluded++
       stats.get(m.playerB)!.excluded++
-      results.push({ match: m, eval: ev, deltaA: 0, ratingA: ra, ratingB: rb })
+      results.push({ match: m, eval: ev, deltaA: 0, ratingA: ra, ratingB: rb, k: mk })
       continue
     }
-    pairCounted.set(key, (pairCounted.get(key) ?? 0) + 1)
+    if (!m.tournamentId) pairCounted.set(key, (pairCounted.get(key) ?? 0) + 1)
     const aWon = m.setsA > m.setsB
-    const d = eloDelta(ra, rb, aWon, k)
+    const d = eloDelta(ra, rb, aWon, mk)
     rating.set(m.playerA, ra + d)
     rating.set(m.playerB, rb - d)
     history.get(m.playerA)!.push({ date: m.date, rating: ra + d, matchId: m.id })
@@ -119,7 +124,7 @@ export function compute(data: AppData): Computed {
     }
     sa.last.push(aWon ? 'V' : 'P')
     sb.last.push(aWon ? 'P' : 'V')
-    results.push({ match: m, eval: ev, deltaA: d, ratingA: ra, ratingB: rb })
+    results.push({ match: m, eval: ev, deltaA: d, ratingA: ra, ratingB: rb, k: mk })
   }
 
   const active = players.filter((p) => p.status === 'active')
@@ -182,15 +187,23 @@ export function compute(data: AppData): Computed {
     resultById: new Map(results.map((r) => [r.match.id, r])),
     history,
     pairCounted,
-    pairTotal,
+    pairExcess,
     lastSnapshot: snap
   }
 }
 
-/** Simula l'inserimento di una partita e restituisce come verrebbe valutata. */
-export function previewMatch(data: AppData, draft: Pick<Match, 'playerA' | 'playerB' | 'setsA' | 'setsB' | 'date'>): MatchResult | null {
+/**
+ * Simula l'inserimento di una partita e restituisce come verrebbe valutata.
+ * `tournament` è un torneo non ancora salvato (il primo inserimento di un torneo nuovo).
+ */
+export function previewMatch(
+  data: AppData,
+  draft: Pick<Match, 'playerA' | 'playerB' | 'setsA' | 'setsB' | 'date' | 'tournamentId'>,
+  tournament?: Tournament
+): MatchResult | null {
   const now = new Date().toISOString()
   const temp: Match = { ...draft, id: '~preview', createdAt: now, updatedAt: now }
-  const c = compute({ ...data, matches: [...data.matches, temp] })
+  const tournaments = tournament ? [...data.tournaments.filter((t) => t.id !== tournament.id), tournament] : data.tournaments
+  const c = compute({ ...data, tournaments, matches: [...data.matches, temp] })
   return c.resultById.get(temp.id) ?? null
 }

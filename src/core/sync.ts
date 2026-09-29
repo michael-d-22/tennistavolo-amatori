@@ -32,6 +32,7 @@ export function parseDataFile(raw: unknown): AppData {
     metaUpdatedAt: data.metaUpdatedAt ?? base.metaUpdatedAt,
     players: data.players,
     matches: data.matches,
+    tournaments: Array.isArray(data.tournaments) ? data.tournaments : [],
     snapshots: Array.isArray(data.snapshots) ? data.snapshots : []
   }
 }
@@ -61,6 +62,7 @@ function mergeById<T extends Versioned>(a: T[], b: T[]): { list: T[]; added: num
 export interface MergeReport {
   players: { added: number; updated: number }
   matches: { added: number; updated: number }
+  tournaments: { added: number; updated: number }
   snapshots: { added: number; updated: number }
   settingsFromIncoming: boolean
 }
@@ -72,6 +74,7 @@ export interface MergeReport {
 export function mergeData(local: AppData, incoming: AppData): { data: AppData; report: MergeReport } {
   const p = mergeById(local.players, incoming.players)
   const m = mergeById(local.matches, incoming.matches)
+  const t = mergeById(local.tournaments, incoming.tournaments)
   const s = mergeById(local.snapshots, incoming.snapshots)
   const metaFromIncoming = incoming.metaUpdatedAt > local.metaUpdatedAt
   const meta = metaFromIncoming ? incoming : local
@@ -83,11 +86,13 @@ export function mergeData(local: AppData, incoming: AppData): { data: AppData; r
       metaUpdatedAt: meta.metaUpdatedAt,
       players: p.list,
       matches: m.list,
+      tournaments: t.list,
       snapshots: s.list
     },
     report: {
       players: { added: p.added, updated: p.updated },
       matches: { added: m.added, updated: m.updated },
+      tournaments: { added: t.added, updated: t.updated },
       snapshots: { added: s.added, updated: s.updated },
       settingsFromIncoming: metaFromIncoming
     }

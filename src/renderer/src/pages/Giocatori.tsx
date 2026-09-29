@@ -66,7 +66,7 @@ export function GiocatoriPage({ navigate }: { navigate: Navigate }) {
                   <td className="num">{s.excludedMatches || ''}</td>
                   <td>
                     {s.player.status === 'retired' ? (
-                      <span className="chip chip-grey">ritirato{s.player.retiredAt ? ` dal ${formatDate(s.player.retiredAt)}` : ''}</span>
+                      <span className="chip chip-grey">inattivo{s.player.retiredAt ? ` dal ${formatDate(s.player.retiredAt)}` : ''}</span>
                     ) : (
                       <span className="chip chip-ok">attivo</span>
                     )}

@@ -46,13 +46,28 @@ for (let i = 0; i < 9; i++) {
   const t = new Date(Date.parse('2026-10-01T19:00:00Z') + i * 60000).toISOString()
   matches.push({ id: `c${i}`, date: '2026-10-01', playerA: 'p0', playerB: 'p1', setsA: 3, setsB: i % 3, createdAt: t, updatedAt: t })
 }
+// Un torneo con K 48: partite al meglio dei 5 e dei 3
+const tournament = { id: 't1', date: '2026-10-24', name: "Torneo d'autunno", k: 48, createdAt: t0, updatedAt: t0 }
+const tourGames = [
+  [0, 2, 3, 1],
+  [1, 3, 2, 0],
+  [4, 5, 1, 2],
+  [0, 1, 2, 1],
+  [2, 6, 3, 0],
+  [3, 4, 0, 3]
+]
+tourGames.forEach(([a, b, sa, sb], i) => {
+  const t = new Date(Date.parse('2026-10-24T16:00:00Z') + i * 60000).toISOString()
+  matches.push({ id: `t${i}`, date: '2026-10-24', playerA: `p${a}`, playerB: `p${b}`, setsA: sa, setsB: sb, tournamentId: 't1', createdAt: t, updatedAt: t })
+})
 const data = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   season: { name: 'Stagione 2026-2027', startDate: '2026-09-28', endDate: '2027-06-30' },
-  settings: { startRating: 1200, k: 32, maxMatchesPerPair: 8, minMatchesPerPair: 2, publishEveryDays: 14 },
+  settings: { startRating: 1200, k: 32, tournamentK: 48, maxMatchesPerPair: 8, minMatchesPerPair: 2, publishEveryDays: 14 },
   metaUpdatedAt: t0,
   players,
   matches: matches.filter((m) => m.date <= '2026-10-05'),
+  tournaments: [tournament],
   snapshots: []
 }
 fs.writeFileSync(path.join(dataDir, 'data.json'), JSON.stringify(data))
@@ -107,6 +122,12 @@ app.on('browser-window-created', (_e, win) => {
         console.log('PAGE', name, await js(`document.querySelector('h1')?.innerText`))
         await shot(name)
       }
+      // Tabella delle partite in esubero
+      await js(`document.querySelector('[data-page="matrice"]').click()`)
+      await wait(300)
+      await js(`document.querySelectorAll('.matrix-section')[1].scrollIntoView()`)
+      await wait(300)
+      await shot('matrice-esubero')
       // Nuova partita con anteprima
       await js(`document.querySelector('[data-page="nuova"]').click()`)
       await wait(200)
@@ -121,6 +142,25 @@ app.on('browser-window-created', (_e, win) => {
       await js(`document.querySelectorAll('.score-btn')[4].click()`)
       await wait(300)
       await shot('nuova-anteprima')
+      // Modalità torneo con anteprima (K del torneo, risultati al meglio dei 3)
+      await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Torneo').click()`)
+      await wait(200)
+      await js(`(() => { const s = document.querySelector('.tour-bar select');
+        s.value = 't1'; s.dispatchEvent(new Event('change', { bubbles: true })) })()`)
+      await wait(200)
+      await pick(0, 1)
+      await wait(100)
+      await pick(1, 4)
+      await wait(100)
+      await js(`document.querySelectorAll('.score-btn')[3].click()`)
+      await wait(300)
+      await shot('nuova-torneo')
+      await js(`[...document.querySelectorAll('.page-actions .seg button')].find(b=>b.textContent==='Partita singola').click()`)
+      await wait(100)
+      await pick(0, 1)
+      await pick(1, 4)
+      await js(`document.querySelectorAll('.score-btn')[4].click()`)
+      await wait(200)
       // Salva, annulla, ripeti: controlla i pulsanti in alto a destra.
       const histState = () => js(`[...document.querySelectorAll('.history-bar button')].map(b => b.disabled ? 'off' : 'on').join('/')`)
       await js(`document.querySelector('.btn-save').click()`)

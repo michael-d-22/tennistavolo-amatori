@@ -7,7 +7,7 @@ import type { Navigate } from '../App'
 
 function statusLine(s: Standing): { text: string; bad: boolean } {
   if (s.player.status === 'retired') {
-    return { text: s.player.retiredAt ? `Ritirato il ${formatLongDate(s.player.retiredAt)}` : 'Ritirato', bad: false }
+    return { text: s.player.retiredAt ? `Inattivo dal ${formatLongDate(s.player.retiredAt)}` : 'Inattivo', bad: false }
   }
   if (s.qualified) return { text: 'In classifica', bad: false }
   const n = s.missing.reduce((a, m) => a + m.missing, 0)

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { eloDelta } from '../src/core/elo'
-import { evaluateMatches, previewRetirement } from '../src/core/rules'
+import { evaluateMatches, previewInactive } from '../src/core/rules'
 import { compute, previewMatch } from '../src/core/standings'
 import { mergeData, parseDataFile, toExportFile } from '../src/core/sync'
 import { emptyData, type AppData, type Match, type Player } from '../src/core/types'
-import { addMatch, publishSnapshot, updatePlayer, setMatchOverride, updateMatch } from '../src/core/mutations'
+import { addMatch, addTournament, publishSnapshot, updatePlayer, setMatchOverride, updateMatch, updateTournament } from '../src/core/mutations'
 import { whatsappText } from '../src/core/format'
 
 let seq = 0
@@ -70,56 +70,114 @@ describe('tetto 8 partite per coppia', () => {
   })
 })
 
-describe('regola abbandoni', () => {
-  it('tiene le prime N partite con ciascuno (N = minimo comune)', () => {
-    const ms = [
-      match('x', 'b', 3, 0, '2026-10-01'),
-      match('x', 'c', 3, 0, '2026-10-01'),
-      match('x', 'd', 3, 0, '2026-10-01'),
-      match('x', 'b', 0, 3, '2026-10-02'),
-      match('x', 'c', 0, 3, '2026-10-02'),
-      match('x', 'd', 0, 3, '2026-10-02'),
-      match('x', 'b', 3, 1, '2026-10-03'), // extra con B
-      match('x', 'd', 3, 1, '2026-10-03'), // extra con D
-      match('x', 'd', 3, 1, '2026-10-04') // extra con D
-    ]
-    const players = [player('x', 'retired'), player('b'), player('c'), player('d')]
-    const ev = evaluateMatches(data(players, ms))
-    const counted = ms.filter((m) => ev.get(m.id)!.counted)
-    expect(counted).toHaveLength(6)
-    expect(ev.get(ms[6].id)!.kind).toBe('abandon')
-    expect(ev.get(ms[7].id)!.kind).toBe('abandon')
-    expect(ev.get(ms[8].id)!.kind).toBe('abandon')
+describe('giocatori inattivi', () => {
+  it('tutte le partite di un inattivo sono in pausa e non contano per nessuno', () => {
+    const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('b', 'c', 3, 0)]
+    const d = data([player('x', 'retired'), player('b'), player('c')], ms)
+    const ev = evaluateMatches(d)
+    expect(ev.get(ms[0].id)!.kind).toBe('inactive')
+    expect(ev.get(ms[1].id)!.kind).toBe('inactive')
+    expect(ev.get(ms[2].id)!.counted).toBe(true)
+    // I punti degli altri sono come se le partite con X non esistessero.
+    expect(rating(d, 'b')).toBe(1216)
+    expect(rating(d, 'c')).toBe(1184)
+    expect(d.matches).toHaveLength(3)
   })
 
-  it('considera solo gli avversari effettivamente affrontati', () => {
-    const ms = [match('x', 'b', 3, 0), match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('x', 'c', 3, 0), match('x', 'c', 3, 0)]
-    const players = [player('x', 'retired'), player('b'), player('c'), player('d')]
-    const ev = evaluateMatches(data(players, ms))
-    expect(ms.filter((m) => ev.get(m.id)!.counted)).toHaveLength(4)
-    expect(ev.get(ms[4].id)!.kind).toBe('abandon')
-  })
-
-  it('riattivare il giocatore ripristina tutte le partite', () => {
+  it('riattivare il giocatore fa tornare a contare tutte le partite', () => {
     const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('x', 'c', 3, 0)]
     let d = data([player('x', 'retired'), player('b'), player('c')], ms)
-    expect(evaluateMatches(d).get(ms[2].id)!.counted).toBe(false)
+    expect(ms.filter((m) => evaluateMatches(d).get(m.id)!.counted)).toHaveLength(0)
     d = updatePlayer(d, 'x', { status: 'active' })
-    expect(evaluateMatches(d).get(ms[2].id)!.counted).toBe(true)
+    expect(ms.filter((m) => evaluateMatches(d).get(m.id)!.counted)).toHaveLength(3)
   })
 
-  it('l\'override manuale ha la precedenza', () => {
-    const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('x', 'c', 3, 0)]
+  it("l'override manuale ha la precedenza", () => {
+    const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0)]
     let d = data([player('x', 'retired'), player('b'), player('c')], ms)
-    d = setMatchOverride(d, ms[2].id, { mode: 'include', reason: 'decisione del responsabile' })
-    expect(evaluateMatches(d).get(ms[2].id)!.counted).toBe(true)
+    d = setMatchOverride(d, ms[1].id, { mode: 'include', reason: 'decisione del responsabile' })
+    expect(evaluateMatches(d).get(ms[1].id)!.counted).toBe(true)
   })
 
-  it('anteprima del ritiro', () => {
-    const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('x', 'c', 3, 0)]
-    const p = previewRetirement(data([player('x'), player('b'), player('c')], ms), 'x')
-    expect(p.keepPerOpponent).toBe(1)
-    expect(p.excluded.map((m) => m.id)).toEqual([ms[2].id])
+  it('anteprima delle partite che andranno in pausa', () => {
+    const ms = [match('x', 'b', 3, 0), match('x', 'c', 3, 0), match('b', 'c', 3, 0)]
+    const p = previewInactive(data([player('x'), player('b'), player('c')], ms), 'x')
+    expect(p.map((m) => m.id)).toEqual([ms[0].id, ms[1].id])
+  })
+})
+
+describe('partite in esubero', () => {
+  it('restano registrate e vengono contate a parte per coppia', () => {
+    const ms = Array.from({ length: 10 }, (_, i) => match('a', 'b', 3, 0, `2026-10-${String(i + 1).padStart(2, '0')}`))
+    const c = compute(data([player('a'), player('b')], ms))
+    expect(c.pairCounted.get('a|b')).toBe(8)
+    expect(c.pairExcess.get('a|b')).toBe(2)
+    expect(c.results).toHaveLength(10)
+  })
+})
+
+describe('tornei', () => {
+  function withTournament(k = 48) {
+    let d = data([player('a'), player('b'), player('c')], [])
+    const r = addTournament(d, { date: '2026-12-20', name: '  Torneo di Natale ', k })
+    return { d: r.data, tid: r.id }
+  }
+
+  it('le partite di torneo usano il K del torneo e la sua data', () => {
+    const { d: d0, tid } = withTournament()
+    const d = addMatch(d0, { date: '2026-01-01', playerA: 'a', playerB: 'b', setsA: 2, setsB: 1, tournamentId: tid }).data
+    expect(d.tournaments[0].name).toBe('Torneo di Natale')
+    expect(d.matches[0].date).toBe('2026-12-20')
+    expect(rating(d, 'a')).toBe(1224)
+    expect(compute(d).results[0].k).toBe(48)
+  })
+
+  it('sono fuori dal limite per coppia e dal minimo per la qualificazione', () => {
+    const { d: d0, tid } = withTournament()
+    let d = d0
+    for (let i = 0; i < 8; i++) d = addMatch(d, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0 }).data
+    d = addMatch(d, { date: '', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0, tournamentId: tid }).data
+    d = addMatch(d, { date: '', playerA: 'a', playerB: 'c', setsA: 3, setsB: 0, tournamentId: tid }).data
+    d = addMatch(d, { date: '', playerA: 'a', playerB: 'c', setsA: 3, setsB: 0, tournamentId: tid }).data
+    const c = compute(d)
+    expect(c.results.every((r) => r.eval.counted)).toBe(true)
+    expect(c.pairCounted.get('a|b')).toBe(8)
+    expect(c.pairCounted.get('a|c') ?? 0).toBe(0)
+    expect(c.standings.find((s) => s.player.id === 'a')!.qualified).toBe(false)
+    // La 9ª partita normale va comunque in esubero.
+    const p = previewMatch(d, { date: '2026-12-21', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0 })!
+    expect(p.eval.kind).toBe('cap')
+  })
+
+  it('al meglio dei 3 solo nei tornei', () => {
+    const { d, tid } = withTournament()
+    expect(() => addMatch(d, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 2, setsB: 0 })).toThrow()
+    expect(() => addMatch(d, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 2, setsB: 0, tournamentId: tid })).not.toThrow()
+    expect(() => addMatch(d, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 2, setsB: 2, tournamentId: tid })).toThrow()
+  })
+
+  it('cambiare data e K del torneo aggiorna tutte le sue partite', () => {
+    const { d: d0, tid } = withTournament()
+    let d = addMatch(d0, { date: '', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0, tournamentId: tid }).data
+    d = updateTournament(d, tid, { date: '2026-12-22', k: 64 })
+    expect(d.matches[0].date).toBe('2026-12-22')
+    expect(d.tournaments[0].name).toBeUndefined()
+    expect(rating(d, 'a')).toBe(1232)
+  })
+
+  it("l'anteprima usa il K di un torneo non ancora salvato", () => {
+    const d = data([player('a'), player('b')], [])
+    const t = { id: '~t', date: '2026-10-01', k: 40, createdAt: '', updatedAt: '' }
+    const p = previewMatch(d, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0, tournamentId: '~t' }, t)!
+    expect(p.deltaA).toBe(20)
+  })
+
+  it('i tornei si uniscono in sincronizzazione', () => {
+    const { d: base } = withTournament()
+    const other = addTournament(base, { date: '2027-01-06', k: 48 }).data
+    const { data: merged, report } = mergeData(base, other)
+    expect(report.tournaments).toEqual({ added: 1, updated: 0 })
+    expect(merged.tournaments).toHaveLength(2)
   })
 })
 
@@ -132,7 +190,7 @@ describe('qualificazione', () => {
     expect(a.missing).toEqual([{ playerId: 'c', name: 'C', missing: 1 }])
   })
 
-  it('i ritirati non contano come avversari richiesti', () => {
+  it('gli inattivi non contano come avversari richiesti', () => {
     const ms = [match('a', 'b', 3, 0), match('a', 'b', 3, 0)]
     const c = compute(data([player('a'), player('b'), player('r', 'retired')], ms))
     expect(c.standings.find((s) => s.player.id === 'a')!.qualified).toBe(true)

@@ -1,9 +1,14 @@
 import type { Computed, Standing } from './standings'
-import type { AppData } from './types'
+import type { AppData, Tournament } from './types'
 
 export function formatDate(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split('-')
   return `${d}/${m}/${y}`
+}
+
+/** Nome da mostrare: quello scelto oppure "Torneo del 12/10/2026". */
+export function tournamentLabel(t: Pick<Tournament, 'name' | 'date'>): string {
+  return t.name || `Torneo del ${formatDate(t.date)}`
 }
 
 export function todayISO(now = new Date()): string {
@@ -63,10 +68,10 @@ export function whatsappText(data: AppData, c: Computed, date: string): string {
     lines.push('')
     lines.push(`🔴 = non ancora in classifica ufficiale (servono almeno ${data.settings.minMatchesPerPair} partite con ciascun avversario)`)
   }
-  const retired = c.standings.filter((s) => s.player.status === 'retired')
-  if (retired.length) {
+  const inactive = c.standings.filter((s) => s.player.status === 'retired')
+  if (inactive.length) {
     lines.push('')
-    lines.push(`Ritirati: ${retired.map((s) => s.player.name).join(', ')}`)
+    lines.push(`Inattivi: ${inactive.map((s) => s.player.name).join(', ')}`)
   }
   const played = c.results.filter((r) => r.eval.counted).length
   lines.push('')
@@ -93,18 +98,20 @@ export function standingsCsv(c: Computed): string {
     s.setsWon,
     s.setsLost,
     s.qualified ? 'Sì' : 'No',
-    s.player.status === 'retired' ? 'Ritirato' : 'Attivo'
+    s.player.status === 'retired' ? 'Inattivo' : 'Attivo'
   ])
   return '﻿' + [head, ...rows].map((r) => r.map(csvCell).join(';')).join('\r\n')
 }
 
 export function matchesCsv(data: AppData, c: Computed): string {
   const name = new Map(data.players.map((p) => [p.id, p.name]))
-  const head = ['Data', 'Giocatore A', 'Giocatore B', 'Risultato', 'Vincitore', 'Punti A', 'Punti B', 'Valida', 'Motivo esclusione']
+  const tour = new Map(data.tournaments.map((t) => [t.id, tournamentLabel(t)]))
+  const head = ['Data', 'Torneo', 'Giocatore A', 'Giocatore B', 'Risultato', 'Vincitore', 'Punti A', 'Punti B', 'Valida', 'Motivo esclusione']
   const rows = c.results.map((r) => {
     const m = r.match
     return [
       formatDate(m.date),
+      m.tournamentId ? (tour.get(m.tournamentId) ?? 'Torneo') : '',
       name.get(m.playerA) ?? '',
       name.get(m.playerB) ?? '',
       `${m.setsA}-${m.setsB}`,

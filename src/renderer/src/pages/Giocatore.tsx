@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { fmtDelta, formatDate, formatLongDate, todayISO } from '@core/format'
 import { deletePlayer, updatePlayer } from '@core/mutations'
-import { pairKey, previewRetirement } from '@core/rules'
+import { pairKey, previewInactive } from '@core/rules'
 import { useStore } from '../store'
 import { Confirm, Delta, Empty, Figures, Meter, Modal, PageHead } from '../components/ui'
 import { EloChart } from '../components/EloChart'
@@ -53,7 +53,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
   const history = computed.history.get(id) ?? []
   const best = s.played ? Math.max(...history.map((h) => h.rating)) : null
   const standingText = retired
-    ? `ritirato${p.retiredAt ? ` il ${formatLongDate(p.retiredAt)}` : ''}`
+    ? `inattivo${p.retiredAt ? ` dal ${formatLongDate(p.retiredAt)}` : ''}, partite in pausa`
     : s.qualified
       ? 'in classifica ufficiale'
       : 'fuori classifica'
@@ -79,14 +79,14 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
           </button>
           {!retired ? (
             <button className="btn" onClick={() => setRetiring(true)}>
-              Segna come ritirato
+              Segna come inattivo
             </button>
           ) : (
             <button
               className="btn"
               onClick={() =>
                 update((d) => updatePlayer(d, id, { status: 'active', retiredAt: undefined }), 'riattivazione giocatore') &&
-                toast(`${p.name} di nuovo attivo: partite ripristinate`)
+                toast(`${p.name} di nuovo attivo: le sue partite tornano a contare`)
               }
             >
               Riattiva
@@ -155,7 +155,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                     </td>
                     <td>
                       {oRetired ? (
-                        <span className="mono small faint">ritirato</span>
+                        <span className="mono small faint">inattivo</span>
                       ) : (
                         <span className="meter-line" title={excluded > 0 ? `${excluded} partite escluse con questo avversario` : undefined}>
                           <Meter value={count} max={max} min={required ? min : undefined} label={`${count} partite valide su ${max}`} />
@@ -165,8 +165,8 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                         </span>
                       )}
                     </td>
-                    <td className="num">{count ? `${w}–${l}` : '—'}</td>
-                    <td className="num mono">{count ? <Delta value={pts} digits={1} /> : '—'}</td>
+                    <td className="num">{w + l ? `${w}–${l}` : '—'}</td>
+                    <td className="num mono">{w + l ? <Delta value={pts} digits={1} /> : '—'}</td>
                   </tr>
                 )
               })}
@@ -196,8 +196,11 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                   const won = iAmA ? m.setsA > m.setsB : m.setsB > m.setsA
                   const d = iAmA ? r.deltaA : -r.deltaA
                   return (
-                    <tr key={m.id} className={r.eval.counted ? '' : 'excluded'}>
-                      <td className="mono small dim">{formatDate(m.date)}</td>
+                    <tr key={m.id} className={`${r.eval.counted ? '' : 'excluded'} ${m.tournamentId ? 'tour' : ''}`}>
+                      <td className="mono small dim">
+                        {formatDate(m.date)}
+                        {m.tournamentId && <span className="tour-tag">torneo</span>}
+                      </td>
                       <td>
                         <span className={won ? 'form-w' : 'form-l'} /> <span className="mono small">{won ? 'vinta' : 'persa'}</span>
                       </td>
@@ -207,8 +210,8 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
                         {r.eval.counted ? (
                           <Delta value={d} digits={1} />
                         ) : (
-                          <span className="neg small" title={r.eval.reason}>
-                            esclusa
+                          <span className={`small ${r.eval.kind === 'inactive' ? 'dim' : 'neg'}`} title={r.eval.reason}>
+                            {r.eval.kind === 'inactive' ? 'in pausa' : 'esclusa'}
                           </span>
                         )}
                       </td>
@@ -270,18 +273,18 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
   const [date, setDate] = useState(todayISO())
   const p = data.players.find((x) => x.id === id)!
   const nameOf = (pid: string) => data.players.find((x) => x.id === pid)?.name ?? '?'
-  const preview = previewRetirement(data, id)
+  const paused = previewInactive(data, id)
 
   function confirm() {
-    if (update((d) => updatePlayer(d, id, { status: 'retired', retiredAt: date }), 'ritiro giocatore')) {
-      toast(`${p.name} segnato come ritirato`)
+    if (update((d) => updatePlayer(d, id, { status: 'retired', retiredAt: date }), 'giocatore inattivo')) {
+      toast(`${p.name} segnato come inattivo: partite in pausa`)
       onClose()
     }
   }
 
   return (
     <Modal
-      title={`Ritiro di ${p.name}`}
+      title={`${p.name} diventa inattivo`}
       onClose={onClose}
       wide
       footer={
@@ -290,23 +293,23 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
             Annulla
           </button>
           <button className="btn btn-primary" onClick={confirm}>
-            Conferma ritiro
+            Segna inattivo
           </button>
         </>
       }
     >
       <p>
-        Regola abbandoni: con ogni avversario affrontato contano solo le prime <strong>{preview.keepPerOpponent}</strong>{' '}
-        partite (il minimo comune). Le altre restano registrate ma escono dalla classifica, e i punti di tutti vengono ricalcolati.
+        Tutte le partite di {p.name} vengono <strong>messe in pausa</strong>: restano salvate ma non contano più per nessuno dei due
+        giocatori, e i punti di tutti vengono ricalcolati come se non fossero state giocate. Se torna attivo, tornano a contare.
       </p>
-      {preview.excluded.length === 0 ? (
-        <p>Nessuna partita verrà esclusa.</p>
+      {paused.length === 0 ? (
+        <p>Nessuna partita da mettere in pausa.</p>
       ) : (
         <>
-          <p>Partite che verranno escluse ({preview.excluded.length}):</p>
+          <p>Partite che andranno in pausa ({paused.length}):</p>
           <table className="table compact">
             <tbody>
-              {preview.excluded.map((m) => (
+              {paused.map((m) => (
                 <tr key={m.id}>
                   <td className="mono small dim">{formatDate(m.date)}</td>
                   <td>{nameOf(m.playerA)}</td>
@@ -321,7 +324,7 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
         </>
       )}
       <p className="dim small">
-        Dopo il ritiro puoi comunque decidere a mano: nella pagina{' '}
+        Puoi comunque decidere a mano: nella pagina{' '}
         <button
           className="link"
           onClick={() => {
@@ -331,10 +334,10 @@ function RetireModal({ id, onClose, navigate }: { id: string; onClose: () => voi
         >
           Partite
         </button>{' '}
-        usa “Includi” / “Escludi” su singole partite. Se il giocatore torna, “Riattiva” ripristina tutto.
+        “Includi” fa contare una singola partita anche se è in pausa. “Riattiva” rimette in gioco tutto.
       </p>
       <label className="field-stack">
-        <span className="label">Data del ritiro</span>
+        <span className="label">Inattivo dal</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
       </label>
     </Modal>

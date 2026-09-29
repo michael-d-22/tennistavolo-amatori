@@ -1,5 +1,5 @@
 import { isValidScore } from './rules'
-import type { AppData, Match, MatchOverride, Player, Settings, Season, Snapshot } from './types'
+import type { AppData, Match, MatchOverride, Player, Settings, Season, Snapshot, Tournament } from './types'
 import type { Computed } from './standings'
 
 // Operazioni sui dati: funzioni pure che restituiscono una nuova copia di AppData.
@@ -39,7 +39,7 @@ export function updatePlayer(data: AppData, id: string, patch: Partial<Omit<Play
 
 export function deletePlayer(data: AppData, id: string): AppData {
   if (data.matches.some((m) => !m.deleted && (m.playerA === id || m.playerB === id))) {
-    throw new Error('Il giocatore ha partite registrate: segnalo come ritirato invece di eliminarlo')
+    throw new Error('Il giocatore ha partite registrate: segnalo come inattivo invece di eliminarlo')
   }
   return updatePlayer(data, id, { deleted: true })
 }
@@ -51,27 +51,76 @@ export interface MatchDraft {
   setsA: number
   setsB: number
   note?: string
+  tournamentId?: string
 }
 
-function validateDraft(d: MatchDraft) {
+function tournamentOf(data: AppData, id: string | undefined): Tournament | undefined {
+  if (!id) return undefined
+  const t = data.tournaments.find((x) => x.id === id && !x.deleted)
+  if (!t) throw new Error('Torneo non trovato')
+  return t
+}
+
+/** Valida la partita; quelle di torneo prendono sempre la data del torneo. */
+function validateDraft(data: AppData, d: MatchDraft): MatchDraft {
   if (!d.playerA || !d.playerB) throw new Error('Seleziona entrambi i giocatori')
   if (d.playerA === d.playerB) throw new Error('Un giocatore non può sfidare se stesso')
-  if (!isValidScore(d.setsA, d.setsB)) throw new Error('Risultato non valido: al meglio dei 5 set (3-0, 3-1, 3-2)')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) throw new Error('Data non valida')
+  const t = tournamentOf(data, d.tournamentId)
+  if (!isValidScore(d.setsA, d.setsB, !!t)) {
+    throw new Error(t ? 'Risultato non valido: al meglio dei 3 o dei 5 set' : 'Risultato non valido: al meglio dei 5 set (3-0, 3-1, 3-2)')
+  }
+  const date = t ? t.date : d.date
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Data non valida')
+  return { ...d, date, tournamentId: t?.id, note: d.note?.trim() || undefined }
 }
 
 export function addMatch(data: AppData, d: MatchDraft): { data: AppData; id: string } {
-  validateDraft(d)
+  const clean = validateDraft(data, d)
   const t = nowISO()
-  const m: Match = { id: newId(), ...d, note: d.note?.trim() || undefined, createdAt: t, updatedAt: t }
+  const m: Match = { id: newId(), ...clean, createdAt: t, updatedAt: t }
   return { data: { ...data, matches: [...data.matches, m] }, id: m.id }
 }
 
+/** Modifica i dati di una partita. Il torneo di appartenenza non cambia. */
 export function updateMatch(data: AppData, id: string, d: MatchDraft): AppData {
-  validateDraft(d)
+  const current = data.matches.find((m) => m.id === id)
+  const clean = validateDraft(data, { ...d, tournamentId: current?.tournamentId })
   return {
     ...data,
-    matches: data.matches.map((m) => (m.id === id ? { ...m, ...d, note: d.note?.trim() || undefined, updatedAt: nowISO() } : m))
+    matches: data.matches.map((m) => (m.id === id ? { ...m, ...clean, updatedAt: nowISO() } : m))
+  }
+}
+
+export interface TournamentDraft {
+  date: string
+  name?: string
+  k: number
+}
+
+function validateTournament(d: TournamentDraft): TournamentDraft {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date)) throw new Error('Data del torneo non valida')
+  if (!(d.k > 0)) throw new Error('Il fattore K del torneo deve essere maggiore di zero')
+  return { date: d.date, name: d.name?.trim() || undefined, k: d.k }
+}
+
+export function addTournament(data: AppData, d: TournamentDraft): { data: AppData; id: string } {
+  const t = nowISO()
+  const tour: Tournament = { id: newId(), ...validateTournament(d), createdAt: t, updatedAt: t }
+  return { data: { ...data, tournaments: [...data.tournaments, tour] }, id: tour.id }
+}
+
+/** Aggiorna nome, data e K del torneo; se cambia la data, la cambia anche a tutte le sue partite. */
+export function updateTournament(data: AppData, id: string, d: TournamentDraft): AppData {
+  const clean = validateTournament(d)
+  const t = nowISO()
+  const old = data.tournaments.find((x) => x.id === id)
+  return {
+    ...data,
+    tournaments: data.tournaments.map((x) => (x.id === id ? { ...x, ...clean, updatedAt: t } : x)),
+    matches:
+      old && old.date !== clean.date
+        ? data.matches.map((m) => (m.tournamentId === id ? { ...m, date: clean.date, updatedAt: t } : m))
+        : data.matches
   }
 }
 

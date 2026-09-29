@@ -26,10 +26,13 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
 
 - **Inserimento rapido delle partite**: due clic per i giocatori, uno per il risultato (3-0, 3-1, 3-2…).
   Prima di salvare mostra quanti punti guadagna e perde ciascuno e avvisa se la partita non conterà.
+- **Tornei**: modalità “Torneo” per inserire di seguito tutte le partite di un torneo (data, nome facoltativo,
+  K proprio, predefinito 48), al meglio dei 5 o dei 3 set. Le partite di torneo sono evidenziate in oro.
 - **Classifica** con punti, variazione e ▲▼ di posizione rispetto all'ultima pubblicazione, vittorie,
   sconfitte, set, forma recente e stato di qualificazione.
 - **Scontri diretti**: tabella di chi ha giocato con chi, con evidenziate le coppie che non hanno ancora
-  raggiunto il minimo richiesto o che hanno già esaurito le partite valide.
+  raggiunto il minimo richiesto o che hanno già esaurito le partite valide, più una seconda tabella con le
+  partite in esubero (oltre l'8ª con lo stesso avversario).
 - **Scheda giocatore** con grafico dell'andamento dei punti e bilancio contro ogni avversario.
 - **Pubblicazione**: immagine o testo pronti da incollare su WhatsApp, oppure PNG, PDF, Excel e CSV.
 - **Partite escluse, mai cancellate**: restano visibili barrate con il motivo e si possono includere o
@@ -61,15 +64,16 @@ Esempio di immagine esportata per il gruppo. Gli export (immagine, PDF, testo Wh
 | --- | --- |
 | Tutti partono da **1200 punti**, anche chi entra a stagione in corso | Ogni giocatore parte da 1200 alla sua data di ingresso |
 | Sistema **Elo con K = 32** | Probabilità attesa `E = 1 / (1 + 10^((Rb − Ra) / 400))`, variazione `32 × (risultato − E)`. Chi batte un avversario più forte guadagna di più |
-| Al massimo **8 partite** con lo stesso avversario | Dalla 9ª in poi la partita viene registrata ma non conta (“oltre limite”) |
+| Al massimo **8 partite** con lo stesso avversario | Dalla 9ª in poi la partita viene registrata ma non conta (“esubero”); le partite in esubero hanno una tabella a parte negli scontri diretti |
 | Per la classifica ufficiale servono almeno **2 partite con ciascun avversario** | Chi non raggiunge la soglia resta visibile in rosso come “fuori classifica”, con l'elenco delle partite che mancano |
-| **Abbandoni**: di chi sparisce contano solo le partite fino al minimo comune | Segnando un giocatore come ritirato, con ogni avversario affrontato restano valide solo le prime N partite (N = il numero minimo giocato con un avversario); le altre vengono escluse e i punti di tutti ricalcolati |
+| **Tornei**: K diverso (predefinito **48**) | Ogni torneo ha data, nome facoltativo e K propri; le sue partite (al meglio dei 5 o dei 3) non occupano posti delle 8 per coppia e non valgono per il minimo di 2 |
+| **Inattivi**: le partite di chi smette vanno in pausa | Segnando un giocatore come inattivo, tutte le sue partite restano salvate ma non contano per nessuno e i punti di tutti vengono ricalcolati; riattivandolo tornano a contare |
 | Casi particolari | Ogni partita può essere forzata a mano come inclusa o esclusa, con un motivo |
 | Pubblicazione **ogni 2 settimane** | Un promemoria segnala quando è ora; “Segna pubblicata” fissa il riferimento per le variazioni successive |
 
 La classifica viene sempre **ricalcolata da zero** ripercorrendo le partite in ordine di data: correggere o
-eliminare una partita vecchia, o riattivare un giocatore ritirato, aggiorna tutto in modo coerente.
-Tutti i numeri (punti di partenza, K, limite e soglia, giorni tra le pubblicazioni) si cambiano da
+eliminare una partita vecchia, o riattivare un giocatore inattivo, aggiorna tutto in modo coerente.
+Tutti i numeri (punti di partenza, K normale e K proposto per i tornei, limite e soglia, giorni tra le pubblicazioni) si cambiano da
 **Impostazioni**.
 
 ## Installazione

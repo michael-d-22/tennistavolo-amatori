@@ -77,7 +77,7 @@ Esempio di immagine esportata per il gruppo. Gli export (immagine, PDF, testo Wh
 | **Tornei**: K diverso (predefinito **48**) | Ogni torneo ha data, nome facoltativo e K propri; le sue partite (al meglio dei 5 o dei 3) non occupano posti delle 8 per coppia e non valgono per il minimo di 2 |
 | **Inattivi**: le partite di chi smette vanno in pausa | Segnando un giocatore come inattivo, tutte le sue partite restano salvate ma non contano per nessuno e i punti di tutti vengono ricalcolati; riattivandolo tornano a contare |
 | Casi particolari | Ogni partita può essere forzata a mano come inclusa o esclusa, con un motivo |
-| Pubblicazione **ogni 2 settimane** | Un promemoria segnala quando è ora; “Segna pubblicata” fissa il riferimento per le variazioni successive |
+| Classifica **pubblicata ogni 2 settimane**, come la FITET | La classifica resta ferma tra una pubblicazione e l'altra. Tutte le partite del periodo si calcolano con i punti della classifica in vigore e le variazioni si sommano quando si pubblica (“Pubblica la classifica”, con un promemoria quando è ora). Correggere una partita già pubblicata ricalcola anche le classifiche pubblicate |
 
 La classifica viene sempre **ricalcolata da zero** ripercorrendo le partite in ordine di data: correggere o
 eliminare una partita vecchia, o riattivare un giocatore inattivo, aggiorna tutto in modo coerente.

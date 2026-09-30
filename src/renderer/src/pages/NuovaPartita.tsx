@@ -302,6 +302,8 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   )
 
   const deltaA = preview?.deltaA ?? 0
+  // I punti si calcolano sulla classifica in vigore e si sommano alla prossima pubblicazione.
+  const periodNote = preview && !preview.pending ? ' · classifica già pubblicata: verrà ricalcolata' : ''
   const nextIndex = pairCount != null ? pairCount + 1 : 0
 
   const asideResults = tourMode
@@ -509,7 +511,7 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
                 <span className="preview-value">
                   <b className={deltaA < 0 ? 'neg' : ''}>{fmtDelta(deltaA, 1)}</b>
                   <span className="mono dim">
-                    {Math.round(preview.ratingA)} → {Math.round(preview.ratingA + deltaA)}
+                    su {Math.round(preview.ratingA)} pt{periodNote}
                   </span>
                 </span>
               </div>
@@ -518,7 +520,7 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
                 <span className="preview-value">
                   <b className={-deltaA < 0 ? 'neg' : ''}>{fmtDelta(-deltaA, 1)}</b>
                   <span className="mono dim">
-                    {Math.round(preview.ratingB)} → {Math.round(preview.ratingB - deltaA)}
+                    su {Math.round(preview.ratingB)} pt{periodNote}
                   </span>
                 </span>
               </div>

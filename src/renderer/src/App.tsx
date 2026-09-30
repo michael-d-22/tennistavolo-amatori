@@ -93,7 +93,7 @@ export function App() {
 
   const last = computed.lastSnapshot
   const daysSince = last ? daysBetween(last.date, todayISO()) : null
-  const publishDue = computed.results.length > 0 && (daysSince == null || daysSince >= data.settings.publishEveryDays)
+  const publishDue = computed.pendingCount > 0 && (daysSince == null || daysSince >= data.settings.publishEveryDays)
   const activePlayers = data.players.filter((p) => !p.deleted).length
 
   if (isNew && activePlayers === 0) return <BenvenutoPage />

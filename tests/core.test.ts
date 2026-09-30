@@ -42,7 +42,9 @@ function match(a: string, b: string, setsA: number, setsB: number, date = '2026-
 function data(players: Player[], matches: Match[]): AppData {
   return { ...emptyData(new Date('2026-09-28')), players, matches }
 }
-const rating = (d: AppData, id: string) => compute(d).standings.find((s) => s.player.id === id)!.rating
+/** Classifica con tutte le partite già pubblicate. */
+const official = (d: AppData) => compute(publishSnapshot(d, '2099-12-31'))
+const rating = (d: AppData, id: string) => official(d).standings.find((s) => s.player.id === id)!.rating
 
 describe('Elo K32', () => {
   it('due giocatori a 1200: chi vince prende 16 punti', () => {
@@ -62,7 +64,7 @@ describe('Elo K32', () => {
       [player('a'), player('b'), player('c')],
       [match('a', 'b', 3, 0), match('b', 'c', 3, 2), match('c', 'a', 3, 1), match('a', 'b', 2, 3)]
     )
-    const total = compute(d).standings.reduce((s, x) => s + x.rating, 0)
+    const total = official(d).standings.reduce((s, x) => s + x.rating, 0)
     expect(total).toBeCloseTo(3600, 8)
   })
 })
@@ -75,7 +77,7 @@ describe('tetto 8 partite per coppia', () => {
     expect(ms.filter((m) => ev.get(m.id)!.counted)).toHaveLength(8)
     expect(ev.get(ms[8].id)!.kind).toBe('cap')
     expect(ev.get(ms[9].id)!.kind).toBe('cap')
-    expect(compute(d).standings.find((s) => s.player.id === 'a')!.played).toBe(8)
+    expect(official(d).standings.find((s) => s.player.id === 'a')!.played).toBe(8)
   })
 
   it('una partita esclusa a mano non occupa un posto', () => {
@@ -163,7 +165,7 @@ describe('tornei', () => {
     d = addMatch(d, { date: '', playerA: 'a', playerB: 'b', setsA: 3, setsB: 0, tournamentId: tid }).data
     d = addMatch(d, { date: '', playerA: 'a', playerB: 'c', setsA: 3, setsB: 0, tournamentId: tid }).data
     d = addMatch(d, { date: '', playerA: 'a', playerB: 'c', setsA: 3, setsB: 0, tournamentId: tid }).data
-    const c = compute(d)
+    const c = official(d)
     expect(c.results.every((r) => r.eval.counted)).toBe(true)
     expect(c.pairCounted.get('a|b')).toBe(8)
     expect(c.pairCounted.get('a|c') ?? 0).toBe(0)
@@ -208,7 +210,7 @@ describe('tornei', () => {
 describe('qualificazione', () => {
   it('servono 2 partite contro ciascun avversario attivo', () => {
     const ms = [match('a', 'b', 3, 0), match('a', 'b', 3, 0), match('a', 'c', 3, 0)]
-    const c = compute(data([player('a'), player('b'), player('c')], ms))
+    const c = official(data([player('a'), player('b'), player('c')], ms))
     const a = c.standings.find((s) => s.player.id === 'a')!
     expect(a.qualified).toBe(false)
     expect(a.missing).toEqual([{ playerId: 'c', name: 'C', missing: 1 }])
@@ -216,7 +218,7 @@ describe('qualificazione', () => {
 
   it('gli inattivi non contano come avversari richiesti', () => {
     const ms = [match('a', 'b', 3, 0), match('a', 'b', 3, 0)]
-    const c = compute(data([player('a'), player('b'), player('r', 'retired')], ms))
+    const c = official(data([player('a'), player('b'), player('r', 'retired')], ms))
     expect(c.standings.find((s) => s.player.id === 'a')!.qualified).toBe(true)
     expect(c.standings.find((s) => s.player.id === 'r')!.position).toBeNull()
   })
@@ -248,14 +250,63 @@ describe('ricalcolo e anteprima', () => {
 })
 
 describe('pubblicazione e sync', () => {
-  it('le variazioni sono rispetto all\'ultima pubblicazione', () => {
-    let d = data([player('a'), player('b')], [match('a', 'b', 3, 0)])
-    d = publishSnapshot(d, compute(d), '2026-10-01')
-    d = { ...d, matches: [...d.matches, match('b', 'a', 3, 0, '2026-10-05')] }
+  it('prima della pubblicazione la classifica non cambia', () => {
+    const d = data([player('a'), player('b')], [match('a', 'b', 3, 0)])
     const c = compute(d)
+    expect(c.standings.every((s) => s.rating === 1200 && s.played === 0)).toBe(true)
+    expect(c.pendingCount).toBe(1)
+    expect(c.results[0].pending).toBe(true)
+    expect(c.results[0].deltaA).toBe(16)
+  })
+
+  it('nel periodo i punti sono congelati alla classifica in vigore (come FITET)', () => {
+    // Senza congelamento la seconda vittoria di A varrebbe meno di 16.
+    let d = data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-01'), match('a', 'b', 3, 0, '2026-10-02')])
+    d = publishSnapshot(d, '2026-10-10')
+    expect(rating(d, 'a')).toBe(1232)
+    const c = compute(d)
+    expect(c.results.map((r) => r.ratingA)).toEqual([1200, 1200])
+    expect(c.pendingCount).toBe(0)
+    // Il periodo successivo parte dai punti pubblicati.
+    d = { ...d, matches: [...d.matches, match('b', 'a', 3, 0, '2026-10-12')] }
+    const c2 = compute(d)
+    expect(c2.results[2].ratingA).toBe(1168)
+    expect(c2.results[2].pending).toBe(true)
+    expect(c2.standings.find((s) => s.player.id === 'a')!.rating).toBe(1232)
+  })
+
+  it('le variazioni sono rispetto alla pubblicazione precedente', () => {
+    let d = data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-01')])
+    d = publishSnapshot(d, '2026-10-01')
+    let a = compute(d).standings.find((s) => s.player.id === 'a')!
+    expect(a.deltaSincePublish).toBe(16)
+    expect(a.positionChange).toBeNull()
+    d = { ...d, matches: [...d.matches, match('b', 'a', 3, 0, '2026-10-05')] }
+    expect(compute(d).standings.find((s) => s.player.id === 'a')!.deltaSincePublish).toBe(16)
+    d = publishSnapshot(d, '2026-10-14')
+    const c = compute(d)
+    a = c.standings.find((s) => s.player.id === 'a')!
     const b = c.standings.find((s) => s.player.id === 'b')!
     expect(b.deltaSincePublish).toBeGreaterThan(0)
-    expect(whatsappText(d, c, '2026-10-10')).toContain('CLASSIFICA AMATORI')
+    expect(a.deltaSincePublish).toBeLessThan(0)
+    expect(c.previousSnapshot!.date).toBe('2026-10-01')
+    expect(d.snapshots[1].rows.find((r) => r.playerId === 'b')!.rating).toBe(b.rating)
+    expect(whatsappText(d, c, '2026-10-14')).toContain('CLASSIFICA AMATORI')
+  })
+
+  it('correggere una partita già pubblicata ricalcola le classifiche', () => {
+    const ms = [match('a', 'b', 3, 0, '2026-10-01')]
+    let d = publishSnapshot(data([player('a'), player('b')], ms), '2026-10-10')
+    d = updateMatch(d, ms[0].id, { date: '2026-10-01', playerA: 'a', playerB: 'b', setsA: 0, setsB: 3 })
+    expect(rating(d, 'a')).toBe(1184)
+    expect(compute(d).standings.find((s) => s.player.id === 'a')!.rating).toBe(1184)
+  })
+
+  it('le partite dopo la data di pubblicazione restano in attesa', () => {
+    const d = publishSnapshot(data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-01'), match('a', 'b', 3, 0, '2026-10-20')]), '2026-10-14')
+    const c = compute(d)
+    expect(c.pendingCount).toBe(1)
+    expect(c.standings.find((s) => s.player.id === 'a')!.played).toBe(1)
   })
 
   it('export/import e merge: vince la modifica più recente, le cancellazioni si propagano', () => {

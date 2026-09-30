@@ -30,7 +30,8 @@ export function PubblicaPage() {
   // Se il torneo scelto viene eliminato, si passa al più recente.
   const tour = tournaments.find((t) => t.id === tourId) ?? tournaments[0]
   const summary = useMemo(() => (tour ? tournamentSummary(data, tour) : null), [data, tour])
-  const [date, setDate] = useState(todayISO())
+  // Data fino a cui le partite entrano nella nuova classifica.
+  const [cutoff, setCutoff] = useState(todayISO())
   const [busy, setBusy] = useState<string | null>(null)
   const [tab, setTab] = useState<'grafica' | 'testo'>('grafica')
   const [confirmPublish, setConfirmPublish] = useState(false)
@@ -49,6 +50,10 @@ export function PubblicaPage() {
 
   const last = computed.lastSnapshot
   const daysSince = last ? daysBetween(last.date, todayISO()) : null
+  // Gli export mostrano sempre la classifica ufficiale, datata alla sua pubblicazione.
+  const date = last?.date ?? todayISO()
+  const entering = computed.results.filter((r) => r.pending && r.eval.counted && r.match.date <= cutoff).length
+  const waiting = computed.pendingCount - entering
   const isTour = what === 'torneo'
   const html = useMemo(
     () => (isTour ? (summary ? tournamentHtml(data, summary) : '') : rankingHtml(data, computed, date)),
@@ -108,12 +113,7 @@ export function PubblicaPage() {
                   ))}
                 </select>
               </label>
-            ) : (
-              <label className="field-stack">
-                <span className="label">Data classifica</span>
-                <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayISO())} />
-              </label>
-            )}
+            ) : null}
           </>
         }
       />
@@ -194,12 +194,37 @@ export function PubblicaPage() {
             <aside className="publish-side">
               <section>
                 <div className="section-head">
-                  <h2>1 · Esporta</h2>
+                  <h2>1 · Nuova classifica</h2>
+                </div>
+                <p className="dim small">
+                  {computed.pendingCount === 0
+                    ? last
+                      ? 'Nessuna partita nuova dall’ultima pubblicazione: la classifica è aggiornata.'
+                      : 'Nessuna partita da mettere in classifica.'
+                    : `${computed.pendingCount} ${computed.pendingCount === 1 ? 'partita aspetta' : 'partite aspettano'} di entrare in classifica. Pubblicando, i punti di tutti si aggiornano e restano fermi fino alla pubblicazione successiva.`}
+                </p>
+                <label className="field-stack">
+                  <span className="label">Partite fino al</span>
+                  <input type="date" value={cutoff} onChange={(e) => setCutoff(e.target.value || todayISO())} />
+                </label>
+                <button className="btn btn-primary" disabled={entering === 0} onClick={() => setConfirmPublish(true)}>
+                  Pubblica la classifica al {formatLongDate(cutoff)}
+                </button>
+                {waiting > 0 && entering > 0 && (
+                  <p className="dim small">
+                    {waiting} {waiting === 1 ? 'partita successiva resterà' : 'partite successive resteranno'} per la prossima pubblicazione.
+                  </p>
+                )}
+              </section>
+
+              <section>
+                <div className="section-head">
+                  <h2>2 · Esporta</h2>
                 </div>
                 <div className="export-grid">
                   <button
                     className="btn btn-red wide"
-                    disabled={!!busy}
+                    disabled={!!busy || !last}
                     onClick={() =>
                       run(
                         'png',
@@ -212,7 +237,7 @@ export function PubblicaPage() {
                   </button>
                   <button
                     className="btn wide"
-                    disabled={!!busy}
+                    disabled={!!busy || !last}
                     onClick={() =>
                       run(
                         'wa',
@@ -223,36 +248,24 @@ export function PubblicaPage() {
                   >
                     Copia testo WhatsApp
                   </button>
-                  <button className="btn" disabled={!!busy} onClick={() => run('png-save', () => savePng(data, computed, date), saved)}>
+                  <button className="btn" disabled={!!busy || !last} onClick={() => run('png-save', () => savePng(data, computed, date), saved)}>
                     Salva PNG
                   </button>
-                  <button className="btn" disabled={!!busy} onClick={() => run('pdf', () => savePdf(data, computed, date), saved)}>
+                  <button className="btn" disabled={!!busy || !last} onClick={() => run('pdf', () => savePdf(data, computed, date), saved)}>
                     Salva PDF
                   </button>
-                  <button className="btn wide" disabled={!!busy} onClick={() => run('xlsx', () => saveXlsx(data, computed, date), saved)}>
+                  <button className="btn wide" disabled={!!busy || !last} onClick={() => run('xlsx', () => saveXlsx(data, computed, date), saved)}>
                     Excel (classifica e partite)
                   </button>
-                  <button className="btn" disabled={!!busy} onClick={() => run('csv', () => saveCsv(data, computed, date, 'classifica'), saved)}>
+                  <button className="btn" disabled={!!busy || !last} onClick={() => run('csv', () => saveCsv(data, computed, date, 'classifica'), saved)}>
                     CSV classifica
                   </button>
-                  <button className="btn" disabled={!!busy} onClick={() => run('csv2', () => saveCsv(data, computed, date, 'partite'), saved)}>
+                  <button className="btn" disabled={!!busy || !last} onClick={() => run('csv2', () => saveCsv(data, computed, date, 'partite'), saved)}>
                     CSV partite
                   </button>
                 </div>
+                {!last && <p className="dim small">Si esporta la classifica ufficiale: prima pubblicane una.</p>}
                 {busy && <p className="dim small">Preparazione in corso…</p>}
-              </section>
-
-              <section>
-                <div className="section-head">
-                  <h2>2 · Segna pubblicata</h2>
-                </div>
-                <p className="dim small">
-                  Fissa la classifica di questa data: da qui in poi frecce e variazioni si calcolano rispetto a questa pubblicazione. Fallo dopo aver
-                  esportato.
-                </p>
-                <button className="btn btn-primary" onClick={() => setConfirmPublish(true)}>
-                  Segna pubblicata al {formatLongDate(date)}
-                </button>
               </section>
 
               {snapshots.length > 0 && (
@@ -284,19 +297,22 @@ export function PubblicaPage() {
 
       {confirmPublish && (
         <Confirm
-          title="Segnare la classifica come pubblicata?"
-          message={<p>La classifica attuale verrà salvata con data {formatLongDate(date)} e diventerà il riferimento per le prossime variazioni.</p>}
-          confirmLabel="Segna pubblicata"
-          onConfirm={() =>
-            update((d) => publishSnapshot(d, computed, date), 'pubblicazione', { history: false }) && toast('Classifica segnata come pubblicata')
+          title="Pubblicare la nuova classifica?"
+          message={
+            <p>
+              {entering === 1 ? 'La partita giocata' : `Le ${entering} partite giocate`} fino al {formatLongDate(cutoff)} entrano in classifica e i punti
+              di tutti si aggiornano. La classifica resta questa fino alla prossima pubblicazione.
+            </p>
           }
+          confirmLabel="Pubblica"
+          onConfirm={() => update((d) => publishSnapshot(d, cutoff), 'pubblicazione', { history: false }) && toast('Nuova classifica pubblicata')}
           onClose={() => setConfirmPublish(false)}
         />
       )}
       {deleting && (
         <Confirm
           title="Eliminare questa pubblicazione?"
-          message={<p>Le variazioni verranno calcolate rispetto alla pubblicazione precedente.</p>}
+          message={<p>Le sue partite passano alla pubblicazione successiva (o tornano in attesa, se era l’ultima) e la classifica si ricalcola.</p>}
           confirmLabel="Elimina"
           danger
           onConfirm={() => update((d) => deleteSnapshot(d, deleting), 'eliminazione pubblicazione', { history: false })}

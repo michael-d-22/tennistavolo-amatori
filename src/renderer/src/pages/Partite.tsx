@@ -32,7 +32,7 @@ export function PartitePage({ initialPlayer }: { navigate: Navigate; initialPlay
       return data.matches
         .filter((m) => m.deleted && (!player || m.playerA === player || m.playerB === player))
         .sort((a, b) => (a.date < b.date ? 1 : -1))
-        .map((m) => ({ match: m, eval: { counted: false }, deltaA: 0, ratingA: 0, ratingB: 0, k: 0 }) as MatchResult)
+        .map((m) => ({ match: m, eval: { counted: false }, deltaA: 0, ratingA: 0, ratingB: 0, k: 0, pending: false }) as MatchResult)
     }
     return [...computed.results]
       .reverse()

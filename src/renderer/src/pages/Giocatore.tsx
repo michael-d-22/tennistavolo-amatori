@@ -108,7 +108,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
           { value: Math.round(s.rating), label: 'Punti' },
           {
             value: s.deltaSincePublish == null ? '—' : fmtDelta(s.deltaSincePublish),
-            label: 'Da ultima pubbl.',
+            label: 'Ultima variazione',
             tone: s.deltaSincePublish != null && Math.round(s.deltaSincePublish) < 0 ? 'bad' : undefined
           },
           { value: `${s.wins}–${s.losses}`, label: 'Vinte–perse' },

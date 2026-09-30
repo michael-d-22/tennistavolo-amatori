@@ -212,6 +212,14 @@ app.on('browser-window-created', (_e, win) => {
       check(files.some((f) => f.startsWith('coppa-di-prova') && f.endsWith('.pdf')), 'PDF del torneo salvato')
       await js(`__t.click('.page-actions .seg button', 'Classifica')`)
       await wait(300)
+      // Prima della pubblicazione la classifica è ferma: le partite aspettano.
+      check(readData().snapshots.length === 0, 'nessuna classifica pubblicata')
+      await js(`__t.click('.publish-side button', 'Pubblica la classifica')`)
+      await wait(200)
+      await js(`__t.click('.modal .btn-primary', 'Pubblica')`)
+      await wait(400)
+      d = readData()
+      check(d.snapshots.length === 1 && d.snapshots[0].rows.some((r) => r.rating !== 1200), 'nuova classifica pubblicata con i punti aggiornati')
       for (const label of ['Salva PNG', 'Salva PDF', 'Excel', 'CSV classifica', 'CSV partite']) {
         await js(`__t.click('.export-grid button', ${JSON.stringify(label)})`)
         await idle()

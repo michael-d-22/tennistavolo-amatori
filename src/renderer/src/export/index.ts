@@ -72,8 +72,8 @@ export function rankingHtml(data: AppData, c: Computed, date: string): string {
     })
     .join('')
 
-  const valid = c.results.filter((r) => r.eval.counted).length
-  const since = c.lastSnapshot ? ` · variazioni dal ${formatLongDate(c.lastSnapshot.date)}` : ''
+  const valid = c.results.filter((r) => r.eval.counted && !r.pending).length
+  const since = c.previousSnapshot ? ` · variazioni dal ${formatLongDate(c.previousSnapshot.date)}` : ''
   const season = data.season.name.replace(/^Stagione\s+/i, '')
   return `<div class="amr-card">
     <header class="amr-head">

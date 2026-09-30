@@ -20,15 +20,15 @@ export function ClassificaPage({ navigate }: { navigate: Navigate }) {
   const { minMatchesPerPair, publishEveryDays } = data.settings
 
   const rows = computed.standings.filter((s) => (onlyQualified ? s.qualified : true))
-  const counted = computed.results.filter((r) => r.eval.counted).length
-  const excluded = computed.results.length - counted
+  const counted = computed.results.filter((r) => r.eval.counted && !r.pending).length
+  const pending = computed.pendingCount
   const active = computed.standings.filter((s) => s.player.status === 'active').length
   const qualifiedCount = computed.standings.filter((s) => s.qualified).length
 
   const last = computed.lastSnapshot
   const daysLeft = last ? publishEveryDays - daysBetween(last.date, todayISO()) : 0
   const publishFig =
-    counted === 0
+    pending === 0
       ? { value: '—', label: 'Da pubblicare' }
       : daysLeft <= 0
         ? { value: 'Oggi', label: 'Da pubblicare', tone: 'bad' as const }
@@ -38,7 +38,11 @@ export function ClassificaPage({ navigate }: { navigate: Navigate }) {
     <>
       <PageHead
         title="Classifica"
-        subtitle={last ? `Variazioni rispetto alla pubblicazione del ${formatLongDate(last.date)}` : 'Nessuna classifica ancora pubblicata'}
+        subtitle={
+          last
+            ? `Classifica pubblicata il ${formatLongDate(last.date)}${computed.previousSnapshot ? ` · variazioni rispetto a quella del ${formatLongDate(computed.previousSnapshot.date)}` : ''}. I punti cambiano alla prossima pubblicazione.`
+            : 'Nessuna classifica ancora pubblicata: le partite entrano in classifica dalla prima pubblicazione.'
+        }
         actions={
           <div className="seg" role="group" aria-label="Giocatori mostrati">
             <button className={!onlyQualified ? 'active' : ''} aria-pressed={!onlyQualified} onClick={() => setOnlyQualified(false)}>
@@ -53,8 +57,8 @@ export function ClassificaPage({ navigate }: { navigate: Navigate }) {
 
       <Figures
         items={[
-          { value: counted, label: 'Partite valide' },
-          { value: excluded, label: 'Escluse' },
+          { value: counted, label: 'Partite in classifica' },
+          { value: pending, label: 'In attesa di pubblicazione' },
           { value: `${qualifiedCount} / ${active}`, label: 'In classifica' },
           publishFig
         ]}

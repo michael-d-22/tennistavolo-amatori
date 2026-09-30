@@ -21,7 +21,7 @@ import type {
   TournamentFormat,
   TournamentGroup
 } from './types'
-import type { Computed } from './standings'
+import { compute } from './standings'
 
 // Operazioni sui dati: funzioni pure che restituiscono una nuova copia di AppData.
 // Aggiornano sempre updatedAt, necessario per il merge in sincronizzazione.
@@ -337,28 +337,25 @@ export function updateMeta(data: AppData, season: Season, settings: Settings): A
   return { ...data, season: { ...season, name }, settings, metaUpdatedAt: nowISO() }
 }
 
-export function publishSnapshot(data: AppData, c: Computed, date: string, title?: string): AppData {
+/** Pubblica una nuova classifica: le partite fino a `date` entrano in classifica. */
+export function publishSnapshot(data: AppData, date: string, title?: string): AppData {
   const t = nowISO()
-  const snap: Snapshot = {
-    id: newId(),
-    date,
-    title,
-    rows: c.standings
-      .filter((s) => s.player.status === 'active')
-      .map((s) => ({
-        playerId: s.player.id,
-        name: s.player.name,
-        rating: s.rating,
-        position: s.position!,
-        qualified: s.qualified,
-        played: s.played,
-        wins: s.wins,
-        losses: s.losses
-      })),
-    createdAt: t,
-    updatedAt: t
-  }
-  return { ...data, snapshots: [...data.snapshots, snap] }
+  const snap: Snapshot = { id: newId(), date, title, rows: [], createdAt: t, updatedAt: t }
+  const next = { ...data, snapshots: [...data.snapshots, snap] }
+  // Le righe sono una copia di quanto pubblicato; la classifica si ricalcola sempre dalle partite.
+  snap.rows = compute(next)
+    .standings.filter((s) => s.player.status === 'active')
+    .map((s) => ({
+      playerId: s.player.id,
+      name: s.player.name,
+      rating: s.rating,
+      position: s.position!,
+      qualified: s.qualified,
+      played: s.played,
+      wins: s.wins,
+      losses: s.losses
+    }))
+  return next
 }
 
 export function deleteSnapshot(data: AppData, id: string): AppData {

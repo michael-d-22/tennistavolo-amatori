@@ -74,7 +74,7 @@ export function whatsappText(data: AppData, c: Computed, date: string): string {
     lines.push('')
     lines.push(`Inattivi: ${inactive.map((s) => s.player.name).join(', ')}`)
   }
-  const played = c.results.filter((r) => r.eval.counted).length
+  const played = c.results.filter((r) => r.eval.counted && !r.pending).length
   lines.push('')
   lines.push(`Partite valide giocate: ${played}`)
   return lines.join('\n')

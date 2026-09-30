@@ -1,12 +1,12 @@
 import type { HistoryPoint } from '@core/standings'
 import { formatLongDate } from '@core/format'
 
-/** Andamento dei punti partita per partita: linea color inchiostro, ultimo punto rosso, massimo evidenziato. */
+/** Andamento dei punti di pubblicazione in pubblicazione: linea color inchiostro, ultimo punto rosso, massimo evidenziato. */
 export function EloChart({ points, start }: { points: HistoryPoint[]; start: number }) {
   const W = 640
   const H = 330
   const pad = { l: 48, r: 12, t: 30, b: 34 }
-  if (points.length < 2) return <div className="chart-empty">Il grafico apparirà dopo la prima partita valida.</div>
+  if (points.length < 2) return <div className="chart-empty">Il grafico apparirà alla prima classifica pubblicata.</div>
 
   const values = points.map((p) => p.rating)
   let lo = Math.min(start, ...values)

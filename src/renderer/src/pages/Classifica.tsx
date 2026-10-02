@@ -17,15 +17,23 @@ function statusLine(s: Standing): { text: string; bad: boolean } {
 export function ClassificaPage({ navigate }: { navigate: Navigate }) {
   const { data, computed } = useStore()
   const [onlyQualified, setOnlyQualified] = useState(false)
+  // Provvisoria: come sarebbe pubblicando adesso. Quella ufficiale resta l'unica esportata.
+  const [provisional, setProvisional] = useState(false)
   const { minMatchesPerPair, publishEveryDays } = data.settings
 
-  const rows = computed.standings.filter((s) => (onlyQualified ? s.qualified : true))
+  const table = provisional ? computed.provisional : computed.standings
+  const rows = table.filter((s) => (onlyQualified ? s.qualified : true))
   const counted = computed.results.filter((r) => r.eval.counted && !r.pending).length
   const pending = computed.pendingCount
-  const active = computed.standings.filter((s) => s.player.status === 'active').length
-  const qualifiedCount = computed.standings.filter((s) => s.qualified).length
+  const active = table.filter((s) => s.player.status === 'active').length
+  const qualifiedCount = table.filter((s) => s.qualified).length
 
   const last = computed.lastSnapshot
+  const subtitle = provisional
+    ? `Provvisoria: come sarebbe pubblicando adesso, con ${pending === 1 ? 'la partita' : `le ${pending} partite`} in attesa${last ? ` · variazioni rispetto alla classifica del ${formatLongDate(last.date)}` : ''}. Non è ufficiale.`
+    : last
+      ? `Classifica pubblicata il ${formatLongDate(last.date)}${computed.previousSnapshot ? ` · variazioni rispetto a quella del ${formatLongDate(computed.previousSnapshot.date)}` : ''}. I punti cambiano alla prossima pubblicazione.`
+      : 'Nessuna classifica ancora pubblicata: le partite entrano in classifica dalla prima pubblicazione.'
   const daysLeft = last ? publishEveryDays - daysBetween(last.date, todayISO()) : 0
   const publishFig =
     pending === 0
@@ -38,20 +46,26 @@ export function ClassificaPage({ navigate }: { navigate: Navigate }) {
     <>
       <PageHead
         title="Classifica"
-        subtitle={
-          last
-            ? `Classifica pubblicata il ${formatLongDate(last.date)}${computed.previousSnapshot ? ` · variazioni rispetto a quella del ${formatLongDate(computed.previousSnapshot.date)}` : ''}. I punti cambiano alla prossima pubblicazione.`
-            : 'Nessuna classifica ancora pubblicata: le partite entrano in classifica dalla prima pubblicazione.'
-        }
+        subtitle={subtitle}
         actions={
-          <div className="seg" role="group" aria-label="Giocatori mostrati">
-            <button className={!onlyQualified ? 'active' : ''} aria-pressed={!onlyQualified} onClick={() => setOnlyQualified(false)}>
-              Tutti
-            </button>
-            <button className={onlyQualified ? 'active' : ''} aria-pressed={onlyQualified} onClick={() => setOnlyQualified(true)}>
-              Solo in classifica
-            </button>
-          </div>
+          <>
+            <div className="seg" role="group" aria-label="Classifica mostrata">
+              <button className={!provisional ? 'active' : ''} aria-pressed={!provisional} onClick={() => setProvisional(false)}>
+                Ufficiale
+              </button>
+              <button className={provisional ? 'active' : ''} aria-pressed={provisional} onClick={() => setProvisional(true)}>
+                Provvisoria
+              </button>
+            </div>
+            <div className="seg" role="group" aria-label="Giocatori mostrati">
+              <button className={!onlyQualified ? 'active' : ''} aria-pressed={!onlyQualified} onClick={() => setOnlyQualified(false)}>
+                Tutti
+              </button>
+              <button className={onlyQualified ? 'active' : ''} aria-pressed={onlyQualified} onClick={() => setOnlyQualified(true)}>
+                Solo in classifica
+              </button>
+            </div>
+          </>
         }
       />
 
@@ -71,7 +85,7 @@ export function ClassificaPage({ navigate }: { navigate: Navigate }) {
             : 'Aggiungi i giocatori per iniziare.'}
         </Empty>
       ) : (
-        <table className="table standings">
+        <table className={`table standings ${provisional ? 'provisional' : ''}`}>
           <thead>
             <tr>
               <th className="pos-cell">#</th>

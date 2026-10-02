@@ -201,7 +201,7 @@ export function PubblicaPage() {
                     ? last
                       ? 'Nessuna partita nuova dall’ultima pubblicazione: la classifica è aggiornata.'
                       : 'Nessuna partita da mettere in classifica.'
-                    : `${computed.pendingCount} ${computed.pendingCount === 1 ? 'partita aspetta' : 'partite aspettano'} di entrare in classifica. Pubblicando, i punti di tutti si aggiornano e restano fermi fino alla pubblicazione successiva.`}
+                    : `${computed.pendingCount} ${computed.pendingCount === 1 ? 'partita aspetta' : 'partite aspettano'} di entrare in classifica. Pubblicando, i punti di tutti si aggiornano e restano fermi fino alla pubblicazione successiva; le partite inserite dopo entrano nella prossima.`}
                 </p>
                 <label className="field-stack">
                   <span className="label">Partite fino al</span>

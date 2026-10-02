@@ -302,6 +302,32 @@ describe('pubblicazione e sync', () => {
     expect(compute(d).standings.find((s) => s.player.id === 'a')!.rating).toBe(1184)
   })
 
+  it('una partita inserita dopo la pubblicazione entra nella successiva, anche se dello stesso giorno', () => {
+    let d = publishSnapshot(data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-14')]), '2026-10-14')
+    // Inserita alle 23:00, dopo la pubblicazione delle 22:30.
+    const late = { ...match('b', 'a', 3, 0, '2026-10-14'), createdAt: '2099-01-01T00:00:00.000Z' }
+    d = { ...d, matches: [...d.matches, late] }
+    const c = compute(d)
+    expect(c.resultById.get(late.id)!.pending).toBe(true)
+    expect(c.resultById.get(late.id)!.ratingA).toBe(1184)
+    expect(c.standings.find((s) => s.player.id === 'a')!.rating).toBe(1216)
+    expect(c.pendingCount).toBe(1)
+  })
+
+  it('la classifica provvisoria somma le partite in attesa', () => {
+    let d = publishSnapshot(data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-01')]), '2026-10-01')
+    d = { ...d, matches: [...d.matches, match('a', 'b', 3, 0, '2026-10-05'), match('a', 'b', 3, 0, '2026-10-06')] }
+    const c = compute(d)
+    const official = c.standings.find((s) => s.player.id === 'a')!
+    const prov = c.provisional.find((s) => s.player.id === 'a')!
+    expect(official.rating).toBe(1216)
+    // Le due partite in attesa valgono uguale: calcolate entrambe su 1216 contro 1184.
+    expect(c.results[1].deltaA).toBeCloseTo(c.results[2].deltaA, 10)
+    expect(prov.rating).toBeCloseTo(1216 + 2 * c.results[1].deltaA, 8)
+    expect(prov.played).toBe(3)
+    expect(prov.deltaSincePublish).toBeCloseTo(2 * c.results[1].deltaA, 8)
+  })
+
   it('le partite dopo la data di pubblicazione restano in attesa', () => {
     const d = publishSnapshot(data([player('a'), player('b')], [match('a', 'b', 3, 0, '2026-10-01'), match('a', 'b', 3, 0, '2026-10-20')]), '2026-10-14')
     const c = compute(d)

@@ -14,6 +14,7 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
   const [deleting, setDeleting] = useState(false)
 
   const s = computed.standings.find((x) => x.player.id === id)
+  const prov = computed.provisional.find((x) => x.player.id === id)
   if (!s) {
     return (
       <>
@@ -110,6 +111,11 @@ export function GiocatorePage({ id, navigate }: { id: string; navigate: Navigate
             value: s.deltaSincePublish == null ? '—' : fmtDelta(s.deltaSincePublish),
             label: 'Ultima variazione',
             tone: s.deltaSincePublish != null && Math.round(s.deltaSincePublish) < 0 ? 'bad' : undefined
+          },
+          {
+            value: prov ? Math.round(prov.rating) : '—',
+            label: 'Provvisori',
+            tone: prov && Math.round(prov.rating) < Math.round(s.rating) ? 'bad' : undefined
           },
           { value: `${s.wins}–${s.losses}`, label: 'Vinte–perse' },
           { value: `${s.setsWon}–${s.setsLost}`, label: 'Set' },

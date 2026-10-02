@@ -843,6 +843,11 @@ tr.excluded .btn.danger {
   font-weight: 700;
   letter-spacing: 0.01em;
 }
+/* Classifica provvisoria: punti in seconda tinta, per non scambiarla con quella ufficiale. */
+.standings.provisional .points {
+  color: var(--ink-2);
+  font-style: italic;
+}
 .status-line {
   display: flex;
   align-items: center;

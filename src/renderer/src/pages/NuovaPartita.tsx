@@ -302,8 +302,10 @@ export function NuovaPartitaPage({ navigate }: { navigate: Navigate }) {
   )
 
   const deltaA = preview?.deltaA ?? 0
-  // I punti si calcolano sulla classifica in vigore e si sommano alla prossima pubblicazione.
-  const periodNote = preview && !preview.pending ? ' · classifica già pubblicata: verrà ricalcolata' : ''
+  // I punti si calcolano sulla classifica in vigore e si sommano alla prossima pubblicazione,
+  // anche per una partita vecchia inserita dopo che la sua classifica è stata pubblicata.
+  const lastPub = computed.lastSnapshot
+  const periodNote = preview && lastPub && matchDate <= lastPub.date ? ' · entra nella prossima classifica' : ''
   const nextIndex = pairCount != null ? pairCount + 1 : 0
 
   const asideResults = tourMode

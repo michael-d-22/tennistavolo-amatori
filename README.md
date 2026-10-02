@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="src/renderer/src/assets/logo.png" width="220" alt="Tornei e partite interne tennistavolo">
+  <img src="src/renderer/src/assets/logo.png" width="160" alt="Logo: racchetta da tennistavolo">
 </p>
 
 <h1 align="center">Tornei e partite interne tennistavolo</h1>
 
 <p align="center">
-  Classifica Elo interna del gruppo <strong>AMATORI</strong> di un circolo di tennistavolo (tennistavolo).<br>
-  App desktop per Windows · Electron + React + TypeScript
+  Classifica Elo e tornei per il gruppo <strong>amatori</strong> di un circolo di tennistavolo.<br>
+  App desktop per Windows · Electron + React + TypeScript · sviluppata con Claude Code
 </p>
 
 <p align="center">
@@ -17,10 +17,32 @@
 
 ## Cos'è
 
-Durante la stagione i componenti del gruppo si sfidano a fine allenamento in partite ufficiali al meglio dei
-5 set, senza un calendario fisso: chi c'è sfida chi c'è. L'app registra i risultati, calcola i punti con il
-sistema **Elo** e applica automaticamente il regolamento della stagione, così che il responsabile debba solo
-inserire le partite e pubblicare la classifica ogni due settimane nel gruppo WhatsApp.
+Un'app nata per un problema reale: in un circolo di tennistavolo, durante la stagione i giocatori del gruppo amatori
+si sfidano a fine allenamento in partite ufficiali al meglio dei 5 set, senza un calendario fisso (chi c'è sfida chi
+c'è), e ogni tanto organizzano tornei interni. Prima i risultati si tenevano a mano.
+
+L'app registra i risultati, calcola i punti con il sistema **Elo**, gestisce i tornei con gironi e tabellone e applica
+automaticamente il regolamento della stagione, così che il responsabile debba solo inserire le partite e pubblicare la
+classifica ogni due settimane nel gruppo WhatsApp. È in uso nel circolo dalla stagione 2026-2027.
+
+> Tutti i nomi, i risultati e le immagini in questo repository sono **dati di prova** generati dagli script
+> in `scripts/`: nessun dato reale dei giocatori è incluso.
+
+## Come è stato sviluppato
+
+Il progetto è stato sviluppato con **[Claude Code](https://claude.com/claude-code)**, l'assistente di programmazione
+di Anthropic, che ha scritto la maggior parte del codice. Il mio lavoro è stato:
+
+- **analisi del problema e requisiti**: raccolta del regolamento del gruppo (limite di partite per coppia, soglia di
+  qualificazione, giocatori inattivi, tornei, pubblicazione a periodi come la classifica FITET) e dei casi particolari;
+- **decisioni di prodotto e di architettura**: logica di calcolo separata dall'interfaccia (`src/core`, riusabile per
+  una futura versione Android), dati in un unico file JSON con backup e sincronizzazione senza server;
+- **verifica**: revisione delle modifiche, test d'uso con il responsabile del gruppo, segnalazione e correzione dei
+  bug, controllo dei casi limite;
+- **rilascio e supporto**: versioni, installer, manuale d'uso per chi usa l'app.
+
+I commit scritti insieme a Claude Code lo riportano nella riga `Co-Authored-By`. La qualità è controllata da
+57 test automatici sul motore di calcolo, da un test end-to-end che usa l'app vera e dal controllo dei tipi TypeScript.
 
 ## Funzionalità
 
@@ -45,8 +67,7 @@ inserire le partite e pubblicare la classifica ogni due settimane nel gruppo Wha
   anche un riepilogo con podio, partecipanti, gironi, tabellone e risultati set per set.
 - **Partite escluse, mai cancellate**: restano visibili barrate con il motivo e si possono includere o
   escludere a mano.
-- **Tema scuro** (predefinito) e **tema chiaro**, oppure automatico come Windows. Grafica “da tabellone”: blu e rosso del
-  logo, numeri in Barlow Condensed, testi in IBM Plex Sans e Plex Mono (font inclusi nell'app, funzionano anche offline).
+- **Tema scuro** (predefinito) e **tema chiaro**, oppure automatico come Windows. Grafica “da tabellone”: blu e rosso, numeri in Barlow Condensed, testi in IBM Plex Sans e Plex Mono (font inclusi nell'app, funzionano anche offline).
 - **Backup automatici**, ripristino con un clic, **Ctrl+Z / Ctrl+Y** (o i pulsanti in alto a destra) per annullare e ripetere.
 - **Esporta e importa i dati** (file `.amat`) per spostarli su un altro PC o, in futuro, su Android.
 
@@ -86,9 +107,7 @@ Tutti i numeri (punti di partenza, K normale e K proposto per i tornei, limite e
 
 ## Installazione
 
-**[⬇ Scarica l'ultima versione](https://github.com/michael-d-22/tennistavolo-amatori/releases/latest)** (pagina delle release).
-
-Dalla release, oppure compilando il progetto (vedi sotto), si ottengono due file:
+Compilando il progetto (vedi [Sviluppo](#sviluppo)) con `npm run build:win` si ottengono due file in `dist/`:
 
 - `TennistavoloAmatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
 - `TennistavoloAmatori-Portable-x.y.z.exe`: si avvia senza installare nulla.
@@ -119,8 +138,10 @@ npm install
 npm run dev          # avvia l'app in modalità sviluppo
 npm test             # test del motore di calcolo (Vitest)
 npm run typecheck    # controllo dei tipi TypeScript
+npm run e2e          # test end-to-end: usa l'app compilata su dati di prova
 npm run screenshots  # avvia l'app con dati di prova e salva screenshot ed export in ./snaps
-npm run icon         # rigenera icona e logo da build/logo-source.webp
+npm run guide        # rigenera il PDF del manuale d'uso (docs/guida)
+npm run icon         # rigenera icona e logo da build/logo.svg
 npm run build:win    # crea installer e versione portable in ./dist
 ```
 
@@ -140,7 +161,8 @@ src/
   preload/     API esposta all'interfaccia
   renderer/    interfaccia React (pagine, componenti, export PNG/PDF)
 tests/         test del motore di calcolo
-scripts/       screenshot automatici e generazione icona
+scripts/       test end-to-end, screenshot automatici, manuale PDF, generazione icona
+docs/guida/    manuale d'uso (HTML e PDF)
 ```
 
 ## Verso Android

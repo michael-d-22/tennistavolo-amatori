@@ -138,6 +138,17 @@ dialog.showSaveDialog = async (_w, o) => ({ canceled: false, filePath: path.join
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms))
 
+const TODAY = '2026-10-29T21:00:00'
+const fakeNow = `(() => {
+  const RealDate = Date
+  const offset = ${Date.parse(TODAY) - Date.now()}
+  class FakeDate extends RealDate {
+    constructor(...a) { if (a.length) super(...a); else super(RealDate.now() + offset) }
+    static now() { return RealDate.now() + offset }
+  }
+  window.Date = FakeDate
+})()`
+
 let hooked = false
 app.on('browser-window-created', (_e, win) => {
   if (hooked) return
@@ -145,10 +156,31 @@ app.on('browser-window-created', (_e, win) => {
   const [sw, sh] = (process.env.SNAP_SIZE || '1366x860').split('x').map(Number)
   win.setSize(sw, sh)
   win.webContents.setBackgroundThrottling(false)
+  // L'interfaccia vede come "oggi" giorno TODAY, così le date relative ("3 giorni fa") tornano con i dati di prova.
+  win.webContents.debugger.attach('1.3')
+  win.webContents.debugger.sendCommand('Page.enable')
+  win.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: fakeNow })
   win.webContents.once('did-finish-load', async () => {
     try {
       await wait(800)
       const js = (s) => win.webContents.executeJavaScript(s)
+      // Ricarica perché il primo caricamento potrebbe essere partito prima dell'orologio finto.
+      win.webContents.reload()
+      await new Promise((r) => win.webContents.once('did-finish-load', r))
+      await wait(800)
+      const publish = async (date) => {
+        await js(`document.querySelector('[data-page="pubblica"]').click()`)
+        await wait(300)
+        // Il campo data parte da oggi: React ascolta l'evento "input".
+        await js(`(() => { const i = document.querySelector('.field-stack input[type=date]');
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, '${date}');
+          i.dispatchEvent(new Event('input', { bubbles: true })) })()`)
+        await wait(200)
+        await js(`[...document.querySelectorAll('button')].find(b=>b.textContent.startsWith('Pubblica la classifica')).click()`)
+        await wait(200)
+        await js(`document.querySelector('.modal .btn-primary').click()`)
+        await wait(800)
+      }
       // Aspetta che l'export in corso finisca ("Preparazione in corso…" sparisce), al massimo 60 secondi.
       const idle = async () => {
         await wait(300)
@@ -159,13 +191,8 @@ app.on('browser-window-created', (_e, win) => {
         const img = await win.webContents.capturePage()
         fs.writeFileSync(path.join(outDir, `${name}.png`), img.toPNG())
       }
-      // Pubblica una classifica, poi aggiungi altre partite per vedere le variazioni.
-      await js(`document.querySelector('[data-page="pubblica"]').click()`)
-      await wait(300)
-      await js(`[...document.querySelectorAll('button')].find(b=>b.textContent.startsWith('Segna pubblicata')).click()`)
-      await wait(200)
-      await js(`document.querySelector('.modal .btn-primary').click()`)
-      await wait(800)
+      // Pubblica una classifica, poi aggiungi altre partite e pubblica di nuovo per vedere le variazioni.
+      await publish('2026-10-05')
       // Aggiunge le partite successive alla pubblicazione e ricarica.
       const saved = JSON.parse(fs.readFileSync(path.join(dataDir, 'data.json'), 'utf8'))
       saved.matches.push(...matches.filter((m) => m.date > '2026-10-05'))
@@ -175,6 +202,9 @@ app.on('browser-window-created', (_e, win) => {
       win.webContents.reload()
       await new Promise((r) => win.webContents.once('did-finish-load', r))
       await wait(800)
+      // Seconda pubblicazione: restano in attesa solo le partite dopo il 26 ottobre.
+      await publish('2026-10-26')
+      await wait(4000) // il tempo che sparisca l'avviso "Nuova classifica pubblicata"
       for (const [name, idx] of pages) {
         await js(`document.querySelector('[data-page="${name}"]').click()`)
         await wait(400)

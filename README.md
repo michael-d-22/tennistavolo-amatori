@@ -107,7 +107,9 @@ Tutti i numeri (punti di partenza, K normale e K proposto per i tornei, limite e
 
 ## Installazione
 
-Compilando il progetto (vedi [Sviluppo](#sviluppo)) con `npm run build:win` si ottengono due file in `dist/`:
+**[⬇ Scarica l'ultima versione](https://github.com/michael-d-22/tennistavolo-amatori/releases/latest)** (pagina delle release).
+
+Dalla release, oppure compilando il progetto (vedi [Sviluppo](#sviluppo)) con `npm run build:win`, si ottengono due file:
 
 - `TennistavoloAmatori-Setup-x.y.z.exe`: installer classico con collegamento sul desktop.
 - `TennistavoloAmatori-Portable-x.y.z.exe`: si avvia senza installare nulla.

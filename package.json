@@ -3,7 +3,8 @@
   "productName": "Tornei e partite interne tennistavolo",
   "version": "1.0.2",
   "description": "Tornei e partite interne tennistavolo - classifica Elo interna del gruppo AMATORI",
-  "author": "Tornei e partite interne tennistavolo",
+  "author": "Michael D'Amico",
+  "license": "MIT",
   "private": true,
   "main": "./out/main/index.js",
   "scripts": {

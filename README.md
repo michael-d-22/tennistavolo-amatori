@@ -173,3 +173,7 @@ L'app è predisposta per una futura versione Android:
 - l'interfaccia è una normale app web React, impacchettabile con **Capacitor** sostituendo `window.api`
   (oggi fornita da Electron) con un'implementazione basata sul filesystem del telefono;
 - lo scambio dati fra desktop e telefono avviene con il file `.amat`, senza bisogno di server.
+
+## Licenza
+
+Rilasciato con licenza [MIT](LICENSE).
